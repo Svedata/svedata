@@ -4,6 +4,11 @@
 
 ### Added
 
+- **SCB source.** `svedata.scb.search(query, options?)`,
+  `svedata.scb.table(tableId, options?)`, and `svedata.scb.data(tableId, options?)`.
+  Backed by PxWebAPI 2.0 at `statistikdatabasen.scb.se/api/v2/`. No API key
+  required. Supports `lang: 'en' | 'sv'`. Data returned as JSON-Stat 2.0 in the
+  `jsonstat` field.
 - **Riksbanken source.** `svedata.riksbanken.exchange()` (current EUR/USD/GBP/NOK/DKK
   rates against SEK), `svedata.riksbanken.policy()` (current styrränta and date of
   last change), and `svedata.riksbanken.history(pair, from, to)` (historical

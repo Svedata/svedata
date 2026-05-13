@@ -1,0 +1,64 @@
+---
+title: SCB
+description: Statistiska centralbyråns statistikdatabas via PxWebAPI 2.0
+---
+
+# SCB
+
+Statistiska centralbyråns (SCB) statistikdatabas via REST-API:t
+PxWebAPI 2.0 på `statistikdatabasen.scb.se/api/v2/`. Ingen API-nyckel.
+Rate-limit: max 30 anrop per 10 sekunder och högst 150 000 dataceller
+per anrop.
+
+## Metoder
+
+### `svedata.scb.search(query, options?)`
+
+Sök tabeller i statistikdatabasen. Returnerar tabellsammanfattningar
+inklusive `id`, `label`, `first_period`, `last_period` och
+`variable_names`.
+
+```ts
+const { data } = await svedata.scb.search('Population by region', {
+  lang: 'en',
+  pageSize: 10,
+});
+// data.total = 235
+// data.tables[0].id = 'TAB4562'
+```
+
+`options.lang`: `'en'` (default) eller `'sv'`.
+`options.page`: sidnummer (default 1).
+`options.pageSize`: max-resultat per sida (default 20).
+
+### `svedata.scb.table(tableId, options?)`
+
+Hämta full metadata för en tabell, inklusive dess plats i ämnesträdet.
+
+```ts
+const { data } = await svedata.scb.table('TAB638');
+// data.label = 'Population by region, marital status, age and sex...'
+// data.paths = [[{ id: 'BE', label: 'Population' }, ...]]
+```
+
+### `svedata.scb.data(tableId, options?)`
+
+Hämta data från en tabell. Returneras som JSON-Stat 2.0 i `jsonstat`-fältet,
+plus metadata på topnivå.
+
+```ts
+const { data } = await svedata.scb.data('TAB638', { lang: 'sv' });
+// data.table_id = 'TAB638'
+// data.label, data.updated, data.source
+// data.jsonstat — hela JSON-Stat 2.0-objektet (dimension, value, ...)
+```
+
+För komplicerade urval (filtrera regioner, år, etc.) hämta tabellen
+direkt med en HTTP-klient mot PxWebAPI 2.0 i v0.1 — flat-query-stöd
+kommer i en senare version.
+
+## Felhantering
+
+- 404 / okänd tabell → `{ data: null, meta }`
+- 429 (rate-limit) → `{ data: null, meta: { rate_limit_remaining: 0 } }`
+- Inga exceptions

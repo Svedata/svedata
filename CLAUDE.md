@@ -168,14 +168,18 @@ kör changeset, publicera till npm om allt grönt.
 
 1. SMHI (väder + havsobservationer) — enklast, ger snabb vinst
 2. Riksbanken (växelkurser + räntor) — REST + JSON, lättarbetat
-3. Bolagsverket (företagsinfo)
-4. SCB (statistikdatabasen via PxWebAPI 2.0)
-5. Riksdagen (dokument + ledamöter)
-6. Nord Pool (elpriser via deras öppna feed)
-7. Trafikverket (kräver API-nyckel — hantera i config)
-8. Polisen (öppen feed, enkel)
+3. SCB (statistikdatabasen via PxWebAPI 2.0)
+4. Riksdagen (dokument + ledamöter)
+5. Nord Pool (elpriser via deras öppna feed)
+6. Trafikverket (kräver API-nyckel — hantera i config)
+7. Polisen (öppen feed, enkel)
 
-Stoppa vid 8 källor för v0.1.0. Lansera. Lägg till fler baserat på issues.
+Stoppa vid 7 källor för v0.1.0. Lansera. Lägg till fler baserat på issues.
+
+**Bolagsverket** är skjutet till v0.2 eftersom även deras "öppna"
+Värdefulla-datamängder-API kräver OAuth 2 client-credentials med
+registrerad kund. Vi vill etablera ett ordentligt OAuth-mönster
+innan vi rör den (delas sannolikt med framtida Skatteverket-källor).
 
 ## Vad vi INTE bygger i v0.1
 

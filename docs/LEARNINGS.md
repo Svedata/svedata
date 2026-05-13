@@ -159,6 +159,32 @@ not the first row.
 
 ---
 
+## Lessons from SCB integration
+
+### PxWebAPI 2.0 prod URL is on statistikdatabasen.scb.se, not api.scb.se
+
+The beta v2 lived at `api.scb.se/ov0104/v2beta/api/v2/`. Production
+PxWebAPI 2.0 (launched October 2025) lives at
+`statistikdatabasen.scb.se/api/v2/`. Searching for "SCB API" surfaces
+both URLs — always confirm with a live `curl` before coding against
+either.
+
+### SCB tables endpoint returns helpful pagination metadata
+
+`/tables` returns a `page` object with `pageNumber`, `pageSize`, and
+`totalElements`. Use `totalElements` for "X results" UI, not
+`tables.length`. The same is true for any PxWeb 2.0 list endpoint.
+
+### JSON-Stat 2.0 is dense — return as opaque blob in v0.1
+
+`/tables/{id}/data` returns JSON-Stat 2.0. Parsing it into flat rows
+requires walking `dimension`, `id`, `size`, and `value` together —
+non-trivial. v0.1 returns it as the opaque `jsonstat` field;
+consumers who need rows can use a JSON-Stat lib. Flatten in v0.2 if
+demand exists.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes
