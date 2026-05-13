@@ -1,0 +1,54 @@
+---
+title: Polisen
+description: Polismyndighetens öppna API över händelser
+---
+
+# Polisen
+
+Polisens öppna API på `polisen.se/api/events`. Ingen API-nyckel —
+men API:t kräver en `User-Agent`-header (SDK:n skickar
+`svedata/0.1 (+https://github.com/Svedata/svedata)`).
+
+## Metoder
+
+### `svedata.polisen.events(options?)`
+
+Hämta polisens senaste händelseanmälningar. Som mest returnerar API:t
+~500 aktuella händelser; använd `location` och `type` för att filtrera.
+
+```ts
+const { data } = await svedata.polisen.events({
+  location: ['Stockholm', 'Göteborg'],  // ett namn eller flera
+  type: 'Rån',
+  limit: 20,
+});
+// data.events[0] = {
+//   id: 634929,
+//   datetime: '2026-05-13T17:51:45+02:00',
+//   name: '13 maj 16.04, Rån, Stockholm',
+//   summary: 'En kvinna i 85-årsåldern ...',
+//   type: 'Rån',
+//   url: 'https://polisen.se/aktuellt/handelser/2026/maj/13/...',
+//   location_name: 'Stockholms län',
+//   latitude: 59.602496,
+//   longitude: 18.138438,
+// }
+```
+
+## Egenheter som hanteras åt dig
+
+- **Datetime**: API:t returnerar `"2026-05-13 17:51:45 +02:00"` — SDK:n
+  normaliserar till ISO 8601 (`"2026-05-13T17:51:45+02:00"`).
+- **GPS som sträng**: `location.gps = "59.602496,18.138438"` plattas
+  till `latitude`/`longitude` som `number | null` (null om trasigt).
+  WGS84 enligt projektkonvention.
+- **Relativa URL:er**: `url: "/aktuellt/..."` uppgraderas till absolut
+  `https://polisen.se/...`.
+- **Multifilter**: Skicka `['Stockholm', 'Göteborg']` eller
+  `'Stockholm;Göteborg'` — båda fungerar.
+
+## Felhantering
+
+- 404 → `{ data: null, meta }`
+- 429 → `{ data: null, meta: { rate_limit_remaining: 0 } }`
+- Inga exceptions

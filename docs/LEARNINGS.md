@@ -289,6 +289,36 @@ the happy path is a TODO for whoever has a key.
 
 ---
 
+## Lessons from Polisen integration
+
+### Polisen requires User-Agent — set it from SDK, not consumer
+
+`polisen.se/api/events` rejects requests without a `User-Agent` header.
+We set a Svedata-identifying UA inside the SDK rather than asking the
+consumer to set it; the API's intent is to know *which app* is calling,
+and `svedata/x.y (+https://github.com/Svedata/svedata)` answers that
+correctly even for downstream apps. Future Polisen abuse complaints
+will land in our inbox first — that is the right routing.
+
+### Normalize timestamps to ISO 8601 at the boundary
+
+Polisen returns `"2026-05-13 17:51:45 +02:00"` (space instead of T).
+This still parses with `new Date()` in V8 but not in stricter parsers
+or browser Safari. Always `.replace(' ', 'T').replace(/\s/g, '')` at
+the SDK boundary so consumers can `Date.parse()` reliably. CLAUDE.md
+already says "Datum returneras som ISO 8601-strängar" — this is the
+mechanical step that enforces it.
+
+### Strings-as-coordinates is common in Swedish gov APIs
+
+`location.gps = "59.602496,18.138438"` is a single comma-joined string,
+not an object. SMHI does similar things in some endpoints. Always parse
+to `{ latitude: number | null, longitude: number | null }` at the
+boundary with `Number.parseFloat` + `Number.isFinite` checks — never
+return the raw string.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes

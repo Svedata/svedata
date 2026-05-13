@@ -4,6 +4,7 @@ import { scb } from './sources/scb/index.js';
 import { riksdagen } from './sources/riksdagen/index.js';
 import { nordpool } from './sources/nordpool/index.js';
 import { trafikverket } from './sources/trafikverket/index.js';
+import { polisen } from './sources/polisen/index.js';
 
 export const svedata = {
   smhi,
@@ -12,6 +13,7 @@ export const svedata = {
   riksdagen,
   nordpool,
   trafikverket,
+  polisen,
 } as const;
 
 export type {
@@ -42,6 +44,8 @@ export type {
   TrafikverketTrainsResult,
   TrafikverketSituation,
   TrafikverketSituationsResult,
+  PolisenEvent,
+  PolisenEventsResult,
 } from '@svedata/types';
 
 export default svedata;

@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Polisen source.** `svedata.polisen.events(options?)` returns the police's
+  recent event announcements (up to ~500) with filters on `location` and `type`.
+  No API key required. Datetime normalized to ISO 8601; GPS string split into
+  `latitude` and `longitude` (WGS84); relative URLs upgraded to absolute HTTPS.
 - **Trafikverket source.** First source requiring an API key.
   `svedata.trafikverket.trains(options?)` and `svedata.trafikverket.situations(options?)`.
   Configure via `svedata.trafikverket.configure({ apiKey })` or
