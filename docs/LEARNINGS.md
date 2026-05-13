@@ -319,6 +319,50 @@ return the raw string.
 
 ---
 
+## Lessons from v0.1.0 ship-prep
+
+### `bun pm pack` rewrites `workspace:*` to concrete versions
+
+Critical for publish workflows. When we pack `@svedata/data` whose
+`dependencies` includes `"@svedata/types": "workspace:*"`, the tarball's
+`package.json` contains `"@svedata/types": "0.1.0"`. No manual
+version-rewrite step needed before `npm publish`. Document this in
+the publish runbook — npm pack does *not* do the same rewrite, only
+the Bun/pnpm/changesets toolchain does.
+
+### tsup dual ESM+CJS works out of the box with `external`
+
+For workspace dependencies, marking them `external` in `tsup.config.ts`
+ensures they're not bundled, and consumers pick them up from their
+own `node_modules`. Without `external`, tsup tries to inline workspace
+deps and bloats output. Always external workspace deps.
+
+### Pointing `exports` at `dist/` forces build-before-typecheck
+
+Once `package.json#exports` points to `dist/index.d.ts`, any consumer
+package (including sibling packages in the monorepo) needs that file
+to exist before TypeScript can resolve types. Turbo's `^build`
+dependency for `typecheck` and `test` tasks is therefore mandatory,
+not optional, after switching to dist-based exports.
+
+### CLI bin entry needs a separate tsup entry, not just shebang
+
+A `#!/usr/bin/env node` line in a source file is preserved by tsup,
+but the dts generation chokes if you ask for types on a file with no
+exports. Solution: a separate `bin/cli.ts` entry, configure
+`dts: { entry: 'src/index.ts' }` to scope dts generation to the
+library entry only.
+
+### README quickstart should be verified by paste
+
+A README example that "looks right" usually has at least one typo
+or out-of-date field name. The cheap fix: after writing the README,
+copy the quickstart code into a `.mjs` file inside the clean-room
+install dir and run it. If it doesn't produce real output, the README
+lies — fix the README, not the test.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes

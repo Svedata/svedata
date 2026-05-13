@@ -1,0 +1,64 @@
+name: Publish Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  publish-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test
+
+      - name: Build publishable packages
+        run: bun run build
+
+      - name: Pack tarballs
+        run: |
+          mkdir -p /tmp/svedata-pack
+          for pkg in types sdk mcp cli; do
+            (cd "packages/$pkg" && bun pm pack --destination /tmp/svedata-pack)
+          done
+          ls -la /tmp/svedata-pack
+
+      - name: Clean-room install + smoke test
+        run: |
+          mkdir -p /tmp/svedata-install-test
+          cd /tmp/svedata-install-test
+          npm init -y > /dev/null
+          npm install \
+            /tmp/svedata-pack/svedata-types-0.1.0.tgz \
+            /tmp/svedata-pack/svedata-data-0.1.0.tgz \
+            /tmp/svedata-pack/svedata-mcp-0.1.0.tgz \
+            /tmp/svedata-pack/svedata-cli-0.1.0.tgz
+          cat > smoke.mjs <<'EOF'
+          import { svedata } from '@svedata/data';
+          import { tools } from '@svedata/mcp';
+          const r = await svedata.polisen.events({ limit: 1 });
+          if (!r.data) { console.error('polisen empty'); process.exit(1); }
+          if (!Array.isArray(tools) || tools.length === 0) { console.error('mcp tools missing'); process.exit(1); }
+          console.log('OK', { polisen: r.data.total, mcp: tools.length });
+          EOF
+          node smoke.mjs
