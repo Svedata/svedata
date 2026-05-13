@@ -103,6 +103,62 @@ unless it is a programmer error (auth missing, bad config).
 
 ---
 
+## Lessons from Riksbanken integration
+
+### Riksbank REST API has aggressive per-endpoint rate limits
+
+`api.riksbank.se/swea/v1/` returns HTTP 429 after a small number of
+quick successive calls. The limit appears to be per-endpoint, not
+global, and the cooldown is typically 30–60 seconds. The body is
+JSON `{ statusCode: 429, message: "Try again in N seconds." }`.
+
+Practical:
+
+- Prefer aggregated endpoints (`/Observations/Latest/ByGroup/{id}`)
+  over fan-out (5× `/Observations/Latest/{seriesId}`). One call is
+  always safer than five for the same data.
+- Don't poll the live endpoint in tight loops during development —
+  it just resets the cooldown timer.
+- Live-verification scripts should call one method at a time with
+  delays, not bundle all methods into a single Promise.all.
+
+### Money type does not fit interest rates
+
+The shared `Money = { amount, currency: 'SEK' }` type works for
+prices but not for percentages. Policy rate is a `number` (the
+percent value), not Money. Don't force the type just because the
+domain says "rate" — percentages and currency amounts are different.
+
+### Riksbanken SWEA has sticky rate limiting
+
+During discovery and live verification we hit aggressive 429 responses
+where the retry-after window kept resetting on every request, suggesting
+a longer cooldown than the documented per-minute limit.
+
+Practical:
+
+- For discovery against Riksbanken, use raw curl with deliberate delays
+  (60s+) between requests, not rapid iteration via `bun -e`
+- Live verification of new Riksbanken methods should be spread across
+  the day, not done in one burst
+- Production SDK code should default to exponential backoff on 429, not
+  immediate retry
+
+**TODO:** the Riksbanken wrapper needs live re-verification of `policy()`
+and `history()` from a clean IP (different network, VPN, or next day).
+The `exchange()` method has been verified live and returned real data
+on 2026-05-13.
+
+### Aggregated endpoint returns mixed-freshness data
+
+`/Observations/Latest/ByGroup/130` returns the latest value per
+series, but those latest values can be from different dates
+(retired currencies like CYP still appear with their 2007 date).
+Always derive the response `date` from the max of per-series dates,
+not the first row.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes

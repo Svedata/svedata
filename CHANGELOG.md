@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- **Riksbanken source.** `svedata.riksbanken.exchange()` (current EUR/USD/GBP/NOK/DKK
+  rates against SEK), `svedata.riksbanken.policy()` (current styrränta and date of
+  last change), and `svedata.riksbanken.history(pair, from, to)` (historical
+  exchange rates for a currency pair). Backed by the public REST API at
+  `api.riksbank.se/swea/v1/`, no API key required. 429 responses are treated as
+  empty envelopes with `rate_limit_remaining: 0`.
+
 ### Changed
 
 - **SMHI: migrerad från PMP3gv2 till SNOW1gv1.** SMHI deprecerade PMP3gv2 den

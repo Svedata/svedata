@@ -1,0 +1,75 @@
+---
+title: Riksbanken
+description: Svenska Riksbankens öppna data — växelkurser och styrränta
+---
+
+# Riksbanken
+
+Riksbankens öppna data via REST-API:t på `api.riksbank.se/swea/v1/`.
+Ingen API-nyckel krävs.
+
+**Rate limits är aggressivare än för SMHI och SCB.** Riksbanken returnerar
+HTTP 429 efter bara ett fåtal snabba anrop, och cooldown-fönstret tycks
+återställas vid varje 429-svar. Använd inte denna källa i tighta loopar.
+Vid 429 returnerar SDK:n `{ data: null, meta: { rate_limit_remaining: 0 } }`
+istället för att kasta — applikationer behöver själva implementera backoff.
+
+## Metoder
+
+### `svedata.riksbanken.exchange()`
+
+Nuvarande växelkurser mot svensk krona för EUR, USD, GBP, NOK, DKK.
+Värdet är SEK per 1 enhet utländsk valuta.
+
+```ts
+const { data } = await svedata.riksbanken.exchange();
+// {
+//   date: '2026-05-12',
+//   rates: { EUR: 10.89, USD: 9.27, GBP: 12.45, NOK: 0.91, DKK: 1.46 }
+// }
+```
+
+### `svedata.riksbanken.policy()`
+
+Nuvarande styrränta (procent) och datumet då räntan senast ändrades.
+
+```ts
+const { data } = await svedata.riksbanken.policy();
+// { rate: 1.75, date: '2026-05-13', last_change_date: '2025-10-01' }
+```
+
+### `svedata.riksbanken.history(pair, from, to)`
+
+Historiska växelkurser för ett valutapar mellan två datum (ISO 8601).
+`pair` accepterar `'EUR/SEK'`, `'EURSEK'`, `'eur-sek'` osv.
+
+```ts
+const { data } = await svedata.riksbanken.history(
+  'EUR/SEK',
+  '2026-05-01',
+  '2026-05-12',
+);
+// {
+//   pair: 'EUR/SEK',
+//   from: '2026-05-01',
+//   to: '2026-05-12',
+//   observations: [
+//     { date: '2026-05-08', rate: 10.84 },
+//     { date: '2026-05-11', value: 10.87 },
+//     ...
+//   ]
+// }
+```
+
+## Stödda valutor
+
+EUR, USD, GBP, NOK, DKK. Andra valutor finns hos Riksbanken men är inte
+exponerade i v0.1.
+
+## Felhantering
+
+Följer Svedatas envelope-konvention:
+
+- 404 / okänt valutapar → `{ data: null, meta }`
+- 429 (rate-limit) → `{ data: null, meta: { rate_limit_remaining: 0 } }`
+- Inga exceptions kastas
