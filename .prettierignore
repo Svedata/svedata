@@ -1,0 +1,7 @@
+**/dist/**
+**/node_modules/**
+**/.turbo/**
+**/.next/**
+**/coverage/**
+bun.lockb
+bun.lock

@@ -1,0 +1,16 @@
+{
+  "name": "@svedata-app/dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "description": "app.svedata.dev — Next.js 15 dashboard",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "echo 'dashboard: typecheck stub'",
+    "lint": "echo 'dashboard: lint stub'",
+    "test": "echo 'dashboard: no tests yet'"
+  }
+}

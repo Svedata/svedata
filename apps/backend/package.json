@@ -1,0 +1,16 @@
+{
+  "name": "@svedata-app/backend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "api.svedata.dev — Bun + Hono backend",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "echo 'backend: typecheck stub'",
+    "lint": "echo 'backend: lint stub'",
+    "test": "echo 'backend: no tests yet'"
+  }
+}
