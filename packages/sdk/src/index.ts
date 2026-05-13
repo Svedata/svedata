@@ -2,12 +2,14 @@ import { smhi } from './sources/smhi/index.js';
 import { riksbanken } from './sources/riksbanken/index.js';
 import { scb } from './sources/scb/index.js';
 import { riksdagen } from './sources/riksdagen/index.js';
+import { nordpool } from './sources/nordpool/index.js';
 
 export const svedata = {
   smhi,
   riksbanken,
   scb,
   riksdagen,
+  nordpool,
 } as const;
 
 export type {
@@ -31,6 +33,9 @@ export type {
   RiksdagenMember,
   RiksdagenMemberList,
   RiksdagenDocumentType,
+  NordpoolArea,
+  NordpoolPricePoint,
+  NordpoolDailyPrices,
 } from '@svedata/types';
 
 export default svedata;

@@ -1,0 +1,62 @@
+---
+title: Nord Pool
+description: Svenska elspotpriser (SE1–SE4) per 15-minutersintervall
+---
+
+# Nord Pool
+
+Svenska elspotpriser för områdena SE1–SE4. Nord Pools officiella API
+är kommersiellt (€4 100/år), så vi konsumerar i stället den fria och
+öppna feeden på `elprisetjustnu.se` som speglar samma data via ENTSO-E.
+
+Inga API-nycklar. Inga publicerade rate limits men API:t är statiska
+JSON-filer per dag och elområde — det tål skalning.
+
+## Metoder
+
+### `svedata.nordpool.prices(area, options?)`
+
+Hämta spotpriser för ett givet elområde och datum. Default-datum är
+*idag* i Europe/Stockholm-tidszonen.
+
+```ts
+const { data } = await svedata.nordpool.prices('SE3');
+// data.area = 'SE3'
+// data.date = '2026-05-13'
+// data.prices = 96 points (15-min intervals)
+// data.prices[0] = {
+//   start: '2026-05-13T00:00:00+02:00',
+//   end:   '2026-05-13T00:15:00+02:00',
+//   sek_per_kwh: 1.33868,
+//   eur_per_kwh: 0.1229,
+//   exr: 10.892394,
+// }
+```
+
+Hämta ett specifikt datum:
+
+```ts
+await svedata.nordpool.prices('SE4', { date: '2026-05-12' });
+```
+
+## Tillgängliga elområden
+
+- `SE1` — Luleå / norra Sverige
+- `SE2` — Sundsvall / norra mellansverige
+- `SE3` — Stockholm / södra mellansverige
+- `SE4` — Malmö / södra Sverige
+
+## Anmärkningar
+
+- **15-minutersintervall sedan 1 oktober 2025.** Tidigare var det 24
+  timpunkter per dag; numera 96. Båda äldre och nyare format syns i
+  historisk data.
+- **Morgondagens priser publiceras vid ca 13:00 CET.** Innan dess
+  returnerar API:t 404 för morgondagens datum, vilket SDK:n returnerar
+  som `{ data: null, meta }`.
+
+## Felhantering
+
+- 404 (datum/område saknas) → `{ data: null, meta }`
+- 429 → `{ data: null, meta: { rate_limit_remaining: 0 } }`
+- Inga exceptions

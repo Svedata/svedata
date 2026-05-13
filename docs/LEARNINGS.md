@@ -210,6 +210,34 @@ Always prepend `https:` in the mapper, return absolute URLs.
 
 ---
 
+## Lessons from Nord Pool integration
+
+### Nord Pool's "open" API is commercial — use elprisetjustnu.se instead
+
+Nord Pool Group's official Day-Ahead API costs €4 100/year. For free
+Swedish spot prices the de facto open feed is `elprisetjustnu.se`,
+which pulls from ENTSO-E (the same upstream Nord Pool publishes to).
+When CLAUDE.md says "Nord Pool öppna feed" it means this proxy, not
+Nord Pool's own commercial product. Document the actual data source
+in the SDK's docs page so users understand the chain of custody.
+
+### Time-resolution changed October 2025: 24h → 96 × 15min
+
+Until 2025-09-30 Swedish day-ahead prices were 24 hourly values per
+day. Since 2025-10-01 the feed publishes 96 quarter-hourly values
+(`time_start` → `time_end` = 15 min). Don't hard-code an array length
+assumption; pre-Oct-2025 historical fetches still return 24 rows.
+
+### Default "today" in source timezone, not server timezone
+
+Electricity prices are scheduled in Europe/Stockholm local time. A
+server running UTC that defaults `date` to its own "today" gets the
+wrong calendar day for ~2 hours after midnight Stockholm time. Use
+`Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm' })` to
+get the local YYYY-MM-DD. Applies to any time-of-day-sensitive source.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes

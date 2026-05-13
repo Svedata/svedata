@@ -4,6 +4,10 @@
 
 ### Added
 
+- **Nord Pool source.** `svedata.nordpool.prices(area, options?)` returns Swedish
+  day-ahead spot prices for SE1–SE4 in 15-minute intervals (96 points per day since
+  October 2025). Defaults to today in Europe/Stockholm. Backed by the free open
+  feed at `elprisetjustnu.se` since Nord Pool's official API is commercial.
 - **Riksdagen source.** `svedata.riksdagen.documents(options?)` searches motioner,
   propositioner, betänkanden, etc. by query/type/year. `svedata.riksdagen.members(options?)`
   lists members of parliament filterable by party or constituency. Backed by
