@@ -92,6 +92,68 @@ Följ .claude/skills/add-source.md. Undersök officiell API-dokumentation,
 skriv types, skriv klient, skriv tester med MSW-mocks, dokumentera,
 exportera från huvud-index.
 
+Innan du börjar:
+1. Läs docs/LEARNINGS.md i sin helhet — där finns lärdomar från tidigare källor
+2. Sök på webben efter "<källa> API deprecated 2026" och "<källa> API
+   breaking changes 2026" — verifiera att dokumentationen är aktuell
+3. Lista success criteria
+
+Under bygget — verifiera inkrementellt, inte i slutet:
+
+a) När du har skrivit klienten men innan tester: kör en live-curl mot
+   produktions-endpointen för att verifiera URL-format och responsstruktur.
+   Om HTTP är 4xx eller 5xx, eller om responsen inte matchar förväntad
+   struktur, stanna och felsök innan du fortsätter.
+
+b) När tester är skrivna: kör testerna. Om de inte är gröna, debugga
+   max 3 gånger innan du eskalerar till mig.
+
+c) När tester är gröna: kör en live-verifiering med riktig input
+   (`bun --print` eller skript). Om resultatet är `{ data: null }` eller
+   uppenbart fel, stanna och felsök innan du committar.
+
+Efter bygget:
+- Om du stötte på något icke-trivialt fel som någon annan source-build
+  också kan stöta på, lägg till en kort entry i docs/LEARNINGS.md
+- Följ skills/add-source.md för slutsteg (changeset, dokumentation, export)
+
+Felsökningsstrategi:
+- Max 3 retry-cykler innan eskalering till mig
+- Vid eskalering: rapportera exakt felmeddelande, exakt URL anropad,
+  HTTP-status, och första 500 tecken av response body
+- Antaganden du gjort: dokumentera dem så jag vet vad du checkade
+
+Innan du börjar:
+1. Läs docs/LEARNINGS.md i sin helhet — där finns lärdomar från tidigare källor
+2. Sök på webben efter "<källa> API deprecated 2026" och "<källa> API
+   breaking changes 2026" — verifiera att dokumentationen är aktuell
+3. Lista success criteria
+
+Under bygget — verifiera inkrementellt, inte i slutet:
+
+a) När du har skrivit klienten men innan tester: kör en live-curl mot
+   produktions-endpointen för att verifiera URL-format och responsstruktur.
+   Om HTTP är 4xx eller 5xx, eller om responsen inte matchar förväntad
+   struktur, stanna och felsök innan du fortsätter.
+
+b) När tester är skrivna: kör testerna. Om de inte är gröna, debugga
+   max 3 gånger innan du eskalerar till mig.
+
+c) När tester är gröna: kör en live-verifiering med riktig input
+   (`bun --print` eller skript). Om resultatet är `{ data: null }` eller
+   uppenbart fel, stanna och felsök innan du committar.
+
+Efter bygget:
+- Om du stötte på något icke-trivialt fel som någon annan source-build
+  också kan stöta på, lägg till en kort entry i docs/LEARNINGS.md
+- Följ skills/add-source.md för slutsteg (changeset, dokumentation, export)
+
+Felsökningsstrategi:
+- Max 3 retry-cykler innan eskalering till mig
+- Vid eskalering: rapportera exakt felmeddelande, exakt URL anropad,
+  HTTP-status, och första 500 tecken av response body
+- Antaganden du gjort: dokumentera dem så jag vet vad du checkade
+
 ## När jag säger /goal
 
 Följ .claude/skills/goal.md. Definiera success criteria, fråga inte om
