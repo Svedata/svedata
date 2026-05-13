@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Riksdagen source.** `svedata.riksdagen.documents(options?)` searches motioner,
+  propositioner, betänkanden, etc. by query/type/year. `svedata.riksdagen.members(options?)`
+  lists members of parliament filterable by party or constituency. Backed by
+  `data.riksdagen.se`, no API key. Numeric-string fields normalized to `number`;
+  protocol-relative URLs upgraded to absolute HTTPS; single-object responses
+  normalized to arrays.
 - **SCB source.** `svedata.scb.search(query, options?)`,
   `svedata.scb.table(tableId, options?)`, and `svedata.scb.data(tableId, options?)`.
   Backed by PxWebAPI 2.0 at `statistikdatabasen.scb.se/api/v2/`. No API key

@@ -185,6 +185,31 @@ demand exists.
 
 ---
 
+## Lessons from Riksdagen integration
+
+### XML-backed JSON returns numbers as strings
+
+`data.riksdagen.se` is an XML API with a JSON view bolted on. Numeric
+metadata like `@traffar` (hit count), `fodd_ar` (birth year), and `@sida`
+(page) are JSON *strings*. Always `parseInt` and validate — never trust
+the JSON shape to imply native types.
+
+### Single-result responses collapse arrays to objects
+
+When a Riksdagen list query matches exactly one record, `dokument` /
+`person` is a single object, not a one-element array. Wrap with an
+`ensureArray()` helper on every list field. This bites in production
+where most queries return many results during testing but single
+results in edge cases (e.g. searching a unique doc_id).
+
+### Protocol-relative URLs need upgrading
+
+`dokument_url_html` etc. come back as `//data.riksdagen.se/...` —
+protocol-relative. Browser users handle it; Node SDK consumers don't.
+Always prepend `https:` in the mapper, return absolute URLs.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes

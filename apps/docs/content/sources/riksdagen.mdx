@@ -1,0 +1,69 @@
+---
+title: Riksdagen
+description: Riksdagens öppna data — dokument och ledamöter
+---
+
+# Riksdagen
+
+Riksdagens öppna data via `data.riksdagen.se`. Ingen API-nyckel. Inga
+publicerade rate limits — men API:t är en gammal XML-orienterad backend
+och svar är ibland långsamma vid breda sökningar; använd `pageSize`
+för att hålla nere mängden data.
+
+## Metoder
+
+### `svedata.riksdagen.documents(options?)`
+
+Sök bland Riksdagens dokument (motioner, propositioner, skrivelser,
+betänkanden m.fl.).
+
+```ts
+const { data } = await svedata.riksdagen.documents({
+  query: 'klimat',
+  type: 'mot',     // doktyp — t.ex. 'mot', 'prop', 'bet', 'skr'
+  year: '2025/26', // riksmöte
+  pageSize: 20,
+  page: 1,
+});
+// data.total = 4887
+// data.documents[0].title, .doc_id, .url_html, ...
+```
+
+Returnerade fält per dokument:
+- `id`, `doc_id` (versaler) — id-varianter
+- `type` (doktyp), `title` (titel), `subtitle` (undertitel)
+- `date` (datum), `published` (publicerad)
+- `rm` (riksmöte t.ex. `'2025/26'`), `organ` (utskott)
+- `url_html`, `url_text` — absoluta HTTPS-URL:er
+
+### `svedata.riksdagen.members(options?)`
+
+Lista riksdagsledamöter, valbart filtrerat på parti eller valkrets.
+
+```ts
+const { data } = await svedata.riksdagen.members({
+  party: 'M',
+  pageSize: 20,
+});
+// data.total = 66
+// data.members[0] = { id, first_name, last_name, party, constituency, born_year, ... }
+```
+
+`born_year` är ett `number | null` (källan ger sträng — SDK:n parsar).
+`image_url` är `string | null` (192px-versionen från Riksdagens bildarkiv).
+
+## Egenheter att känna till
+
+- Riksdagens JSON är en wrapper runt en XML-backend. Numeriska
+  metadata-fält (t.ex. `@traffar`) returneras som strängar — SDK:n
+  normaliserar till `number`.
+- När bara ett dokument/en ledamot matchar returnerar källan ett enskilt
+  objekt istället för array. SDK:n hanterar båda formerna.
+- Dokument-URL:er är protokoll-relativa (`//data.riksdagen.se/...`) i
+  råsvaren. SDK:n returnerar absoluta `https://`-URL:er.
+
+## Felhantering
+
+- 404 / okänd sökväg → `{ data: null, meta }`
+- 429 → `{ data: null, meta: { rate_limit_remaining: 0 } }`
+- Inga exceptions

@@ -20,3 +20,4 @@ export type Lang = 'en' | 'sv';
 export * from './smhi.js';
 export * from './riksbanken.js';
 export * from './scb.js';
+export * from './riksdagen.js';
