@@ -103,6 +103,22 @@ unless it is a programmer error (auth missing, bad config).
 
 ---
 
+## Process learnings
+
+### Verify current state before planning fixes
+
+When the user reports a bug, run a quick live check to confirm the
+bug still exists before drafting a fix plan. State observed at
+time T can differ from state at time T+5min if commits or
+deployments happened between.
+
+Practical: before writing migration prompts or refactor plans,
+run the single-line smoke test that reproduces the reported
+symptom. If the symptom is gone, escalate to the user with
+current evidence instead of executing the plan.
+
+---
+
 ## Anti-patterns to avoid
 
 ### Do not catch and swallow errors in source code
