@@ -184,7 +184,20 @@ innan vi rör den (delas sannolikt med framtida Skatteverket-källor).
 ## Vad vi INTE bygger i v0.1
 
 - Inga skrivande operationer mot myndigheter (bara läs)
+- **Ingen Bolagsverket** — även deras avgiftsfria "Värdefulla datamängder"-API
+  kräver OAuth 2 client-credentials med registrerad kund hos Bolagsverket.
+  Att improvisera fram ett OAuth-mönster under v0.1-tidstryck skulle ge dåligt
+  resultat; mönstret förtjänar egen designtid och kommer i v0.2.
 - Ingen Lantmäteriet (kräver formellt avtal, för komplicerat för MVP)
 - Ingen Skatteverket privat-data (kräver myndighetsroll)
 - Ingen BankID-integration (separat paket senare)
 - Ingen GraphQL — pure REST i v1
+
+## Preliminärt för v0.2
+
+- **OAuth 2 client-credentials-mönster** etableras som delad infrastruktur
+  i SDK:n. Förväntas användas av Bolagsverket (Värdefulla datamängder) och
+  framtida Skatteverket-källor. Konfigurationsmönstret bör likna det vi
+  redan har för Trafikverket (`configure({ clientId, clientSecret })` +
+  env-fallback), men med automatisk token-cache och refresh.
+- När mönstret är etablerat: lägg till Bolagsverket som åttonde källa.
