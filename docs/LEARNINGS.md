@@ -238,6 +238,57 @@ get the local YYYY-MM-DD. Applies to any time-of-day-sensitive source.
 
 ---
 
+## Lessons from Trafikverket integration
+
+### XML-in-JSON-out is normal for legacy Swedish APIs
+
+Trafikverket's API speaks XML on the request side
+(`<REQUEST><LOGIN authenticationkey="..."/><QUERY .../></REQUEST>`)
+but returns JSON if you send `Accept: application/json`. SDK consumers
+should never see the XML — build it in the client and expose typed
+filter options. Similar pattern is likely for other legacy `.gov.se`
+APIs migrated to JSON in the last few years.
+
+### globalThis.process trick avoids needing @types/node downstream
+
+A source that wants to read `process.env.X` triggers TS2580 in any
+consumer that doesn't have @types/node — including our own
+`@svedata/mcp`. Solution:
+
+```ts
+const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+const value = proc?.env?.[name];
+```
+
+Lets browser builds compile cleanly, lets Node/Bun pick up env vars
+at runtime, and keeps `@types/node` out of consumer tsconfig.
+
+### Auth errors throw; everything else uses envelope
+
+Per CLAUDE.md design principle #3 we don't throw for "data not found",
+but we *do* throw for auth/config errors. Concretely for Trafikverket:
+
+- 401 / 403 / missing API key → `throw new Error(...)`
+- 429 → empty envelope with `rate_limit_remaining: 0`
+- Other non-2xx → empty envelope
+- Structured `RESULT[0].ERROR` body → throw (it's typically auth or
+  schema-version mismatch — programmer-fixable issues)
+
+This is the first source applying that distinction; document it in
+the source's mdx so users know to wrap `.trains()` / `.situations()`
+in try/catch.
+
+### Live verification of paid/key-gated sources can only test the auth-fail path without credentials
+
+Without a registered `TRAFIKVERKET_API_KEY` we can verify that the
+wrapper correctly *fails* against the live endpoint (401 → throws),
+but not that the happy path produces real data. A green auth-fail
+live test is meaningful: it proves the URL, request body, header,
+and parser are all reaching production. Full live verification of
+the happy path is a TODO for whoever has a key.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes

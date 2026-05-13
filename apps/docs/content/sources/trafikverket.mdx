@@ -1,0 +1,84 @@
+---
+title: Trafikverket
+description: Trafikinformation från väg och järnväg — kräver API-nyckel
+---
+
+# Trafikverket
+
+Trafikinformation för väg och järnväg via Trafikverkets öppna API på
+`api.trafikinfo.trafikverket.se/v2/data.json`.
+
+**Kräver API-nyckel.** [Registrera dig kostnadsfritt hos Trafikverket](https://api.trafikinfo.trafikverket.se/Account/Register)
+och få en `authenticationkey`.
+
+## Konfiguration
+
+Två sätt — välj det som passar miljön:
+
+```ts
+// Env-variabel (default — fungerar i Node/Bun)
+process.env.TRAFIKVERKET_API_KEY = '...';
+
+// Eller explicit i kod
+svedata.trafikverket.configure({ apiKey: '...' });
+```
+
+Om ingen nyckel finns kastas ett tydligt fel — detta är ett av få fall
+i Svedata där en exception används, eftersom saknad nyckel är ett
+konfigurationsfel, inte tom data.
+
+## Metoder
+
+### `svedata.trafikverket.trains(options?)`
+
+Hämta tågannonseringar (avgångar, ankomster, förseningar).
+
+```ts
+const { data } = await svedata.trafikverket.trains({
+  station: 'Cst',  // Stockholm Central — frivilligt filter på FromLocation eller ToLocation
+  limit: 20,
+});
+// data.trains[0] = {
+//   activity_id, activity_type, advertised_train_ident,
+//   from_location: string[], to_location: string[],
+//   advertised_time_at_location, estimated_time_at_location, time_at_location,
+//   canceled: boolean, deviation: string[]
+// }
+```
+
+Schema-version: `1.9` (TrainAnnouncement).
+
+### `svedata.trafikverket.situations(options?)`
+
+Hämta vägtrafikincidenter och avvikelser.
+
+```ts
+const { data } = await svedata.trafikverket.situations({
+  county: 1,  // Stockholms län — frivilligt filter på Deviation.CountyNo
+  limit: 20,
+});
+// data.situations[0] = {
+//   id, modified_time, county_no: number[],
+//   message, road_number, severity_text
+// }
+```
+
+Schema-version: `1.5` (Situation).
+
+## Felhantering
+
+- **401 / 403** → kastar `Error('Trafikverket auth failed ...')`.
+  Detta är medvetet — autentiseringsfel hör inte i envelope.
+- 429 → `{ data: null, meta: { rate_limit_remaining: 0 } }`
+- Övriga icke-2xx → `{ data: null, meta }`
+- Strukturerade ERROR-svar från API:t (`RESULT[0].ERROR`) → kastas som
+  `Error('Trafikverket error: <meddelande>')`
+
+## Anmärkningar
+
+- API:t använder XML-POST internt — SDK:n bygger requesten åt dig
+  och returnerar mappad JSON.
+- Endast två query-typer exponeras i v0.1. För övriga (Camera,
+  WeatherStation, FerryRoute, TrafficFlow m.fl.), öppna issue.
+- Schema-versioner ligger inbyggda för att garantera kompatibilitet.
+  De kommer bumpas via separata releases när Trafikverket ger ut nya.

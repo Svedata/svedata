@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Trafikverket source.** First source requiring an API key.
+  `svedata.trafikverket.trains(options?)` and `svedata.trafikverket.situations(options?)`.
+  Configure via `svedata.trafikverket.configure({ apiKey })` or
+  `TRAFIKVERKET_API_KEY` env variable. Throws on missing-key, 401, 403, and
+  structured API errors. Backed by XML POST against
+  `api.trafikinfo.trafikverket.se/v2/data.json`, mapped to snake_case JSON.
 - **Nord Pool source.** `svedata.nordpool.prices(area, options?)` returns Swedish
   day-ahead spot prices for SE1–SE4 in 15-minute intervals (96 points per day since
   October 2025). Defaults to today in Europe/Stockholm. Backed by the free open

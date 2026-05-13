@@ -3,6 +3,7 @@ import { riksbanken } from './sources/riksbanken/index.js';
 import { scb } from './sources/scb/index.js';
 import { riksdagen } from './sources/riksdagen/index.js';
 import { nordpool } from './sources/nordpool/index.js';
+import { trafikverket } from './sources/trafikverket/index.js';
 
 export const svedata = {
   smhi,
@@ -10,6 +11,7 @@ export const svedata = {
   scb,
   riksdagen,
   nordpool,
+  trafikverket,
 } as const;
 
 export type {
@@ -36,6 +38,10 @@ export type {
   NordpoolArea,
   NordpoolPricePoint,
   NordpoolDailyPrices,
+  TrafikverketTrainAnnouncement,
+  TrafikverketTrainsResult,
+  TrafikverketSituation,
+  TrafikverketSituationsResult,
 } from '@svedata/types';
 
 export default svedata;
