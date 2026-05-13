@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.1
+
+Fix: published tarballs now resolve workspace dependencies to concrete
+versions. v0.1.0 was published with `npm publish` directly from each
+package directory, which uses `npm pack` internally and does not
+rewrite the `workspace:` protocol; the resulting tarballs on the
+registry left `"@svedata/types": "workspace:*"` (and the equivalent
+for `@svedata/data`) in `dependencies`, breaking install in any
+non-workspace environment.
+
+v0.1.1 is published from tarballs produced by `bun pm pack`, which
+does rewrite `workspace:` to the concrete version at pack time. A
+CI guard (`publish-check.yml`) now greps every packed tarball's
+`package.json` for `"workspace:` and fails the workflow if a match
+is found. See `docs/RELEASE.md` for the publish runbook.
+
+v0.1.0 of all four packages has been deprecated on the registry.
+
 ## 0.1.0
 
 The first public release of Svedata. One npm install brings typed

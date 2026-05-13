@@ -1,6 +1,6 @@
 {
   "name": "@svedata/mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP-server för Svedata",
   "license": "MIT",
   "type": "module",
@@ -28,7 +28,7 @@
     "test": "echo 'no tests'"
   },
   "dependencies": {
-    "@svedata/data": "workspace:*"
+    "@svedata/data": "workspace:^"
   },
   "devDependencies": {
     "tsup": "^8.3.0",

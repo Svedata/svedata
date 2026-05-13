@@ -32,33 +32,28 @@ jobs:
       - name: Test
         run: bun run test
 
-      - name: Build publishable packages
-        run: bun run build
+      - name: Build + pack publishable packages
+        run: bun run release:pack
 
-      - name: Pack tarballs
+      - name: Guard — no workspace: protocol in any tarball
         run: |
-          mkdir -p /tmp/svedata-pack
-          for pkg in types sdk mcp cli; do
-            (cd "packages/$pkg" && bun pm pack --destination /tmp/svedata-pack)
+          set -euo pipefail
+          fail=0
+          tmp="$(mktemp -d)"
+          for tgz in dist-tarballs/*.tgz; do
+            name="$(basename "$tgz")"
+            rm -rf "$tmp/extract" && mkdir -p "$tmp/extract"
+            tar -xzf "$tgz" -C "$tmp/extract"
+            if grep -q '"workspace:' "$tmp/extract/package/package.json"; then
+              echo "::error file=$name::tarball package.json still contains 'workspace:' protocol"
+              grep '"workspace:' "$tmp/extract/package/package.json"
+              fail=1
+            else
+              echo "ok $name"
+            fi
           done
-          ls -la /tmp/svedata-pack
+          rm -rf "$tmp"
+          exit "$fail"
 
       - name: Clean-room install + smoke test
-        run: |
-          mkdir -p /tmp/svedata-install-test
-          cd /tmp/svedata-install-test
-          npm init -y > /dev/null
-          npm install \
-            /tmp/svedata-pack/svedata-types-0.1.0.tgz \
-            /tmp/svedata-pack/svedata-data-0.1.0.tgz \
-            /tmp/svedata-pack/svedata-mcp-0.1.0.tgz \
-            /tmp/svedata-pack/svedata-cli-0.1.0.tgz
-          cat > smoke.mjs <<'EOF'
-          import { svedata } from '@svedata/data';
-          import { tools } from '@svedata/mcp';
-          const r = await svedata.polisen.events({ limit: 1 });
-          if (!r.data) { console.error('polisen empty'); process.exit(1); }
-          if (!Array.isArray(tools) || tools.length === 0) { console.error('mcp tools missing'); process.exit(1); }
-          console.log('OK', { polisen: r.data.total, mcp: tools.length });
-          EOF
-          node smoke.mjs
+        run: bun run release:verify

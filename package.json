@@ -19,7 +19,9 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "release:pack": "bash scripts/release-pack.sh",
+    "release:verify": "bash scripts/release-verify.sh"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.0.0",

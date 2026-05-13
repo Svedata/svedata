@@ -1,6 +1,6 @@
 {
   "name": "@svedata/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Kommandoradsverktyg för Svedata",
   "license": "MIT",
   "type": "module",
@@ -28,7 +28,7 @@
     "test": "echo 'no tests'"
   },
   "dependencies": {
-    "@svedata/data": "workspace:*"
+    "@svedata/data": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "^20.16.0",

@@ -319,6 +319,66 @@ return the raw string.
 
 ---
 
+## Lessons from v0.1.1 hotfix (workspace:* on registry)
+
+### `npm publish` runs `npm pack` internally — and `npm pack` does NOT rewrite `workspace:`
+
+v0.1.0 was published with `cd packages/<pkg> && npm publish --access public`
+from each package directory. The tarballs that ended up on the
+registry contained `"@svedata/types": "workspace:*"` verbatim,
+breaking install in any non-workspace consumer.
+
+`bun pm pack` rewrites `workspace:^` → `^X.Y.Z` (and `workspace:*`
+→ `X.Y.Z`) at pack time; `npm pack` does not — it's a strict-mode
+unsupported URL in stock npm. They look identical from the outside
+but produce different artifacts.
+
+Practical: **publish from a tarball produced by `bun pm pack`, not
+by running `npm publish` in a package directory.** The runbook in
+`docs/RELEASE.md` makes this concrete. Earlier LEARNINGS entry about
+`bun pm pack` rewriting was correct but only proved that local pack
+worked — it did not catch the publish path because nobody had yet
+actually published.
+
+### `bun pm pack` reads workspace versions from the lockfile, not from package.json
+
+When bumping versions, just editing `version` in each
+`packages/<pkg>/package.json` is **not enough**. `bun install` with
+an existing lockfile says "no changes" and the lockfile keeps the
+old versions, so `bun pm pack` rewrites `workspace:^` to the *old*
+version. Result: tarball v0.1.1 with dep `^0.1.0` — broken.
+
+Practical: after any version bump, **delete `bun.lock` and run
+`bun install` again** to force regeneration. The release runbook
+documents this as the mandatory next step after editing versions.
+
+### `workspace:^` not `workspace:*` for proper semver caret in published deps
+
+Using `workspace:*` makes `bun pm pack` produce an exact-pin
+dependency (`"@svedata/types": "0.1.1"`). Using `workspace:^`
+produces a caret range (`"@svedata/types": "^0.1.1"`), which is the
+right default for a published SDK — consumers get patch updates of
+internal sibling packages without a major bump. Use `workspace:^`
+everywhere unless you have a specific reason to pin exact.
+
+### Local pack-test isn't sufficient — `what you test must be what you ship`
+
+The v0.1.0 ship-prep ran clean-room install of locally-packed
+tarballs, and the install worked. But the published artifacts were
+different (they were packed by `npm pack` during `npm publish`, not
+by `bun pm pack`). The test passed; the ship failed.
+
+Practical:
+
+- The publish step must use the same `bun pm pack`-produced
+  tarballs that the local verify step used. `npm publish <tarball>`
+  guarantees that. `npm publish` without a path argument does not.
+- CI must grep packed tarballs' `package.json` for `"workspace:`
+  and fail the run if it appears. Added to `publish-check.yml` in
+  v0.1.1.
+
+---
+
 ## Lessons from v0.1.0 ship-prep
 
 ### `bun pm pack` rewrites `workspace:*` to concrete versions
