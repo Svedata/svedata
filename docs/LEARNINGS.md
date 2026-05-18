@@ -319,6 +319,47 @@ return the raw string.
 
 ---
 
+## Lessons from v0.1.2 (Riksbanken rate-limit UX)
+
+### Conservative retry-once beats aggressive retry-many
+
+Our LEARNINGS already noted that Riksbanken's "Try again in N seconds"
+timer resets on every 429. Therefore retry strategy: trust the number
+the server gives us *only when it's small*. We parse `Retry-After`
+header or the body message, retry exactly once, and only if the wait
+is ≤ 10 seconds. If the server says "wait 39 seconds", we don't —
+we surface `meta.error: 'rate_limited'` and let the caller decide
+whether to back off and retry later.
+
+Why not exponential backoff inside the SDK? Because the SDK call is
+typically inside a synchronous user flow (a CLI command, a request
+handler, a UI fetch). A 30-second internal sleep hangs the UI.
+Surface the error fast, let the consumer schedule its own retry.
+
+### `meta.error` is a load-bearing UX signal
+
+Pre-v0.1.2 the SDK returned `{ data: null }` for both "rate limited"
+and "no such record". A user calling `exchange()` right after install
+saw `null` and assumed the SDK was broken. The fix is one optional
+field on `Meta`: `error?: 'rate_limited' | 'not_found' | 'upstream_error'`,
+populated when the SDK has actionable info.
+
+This is non-breaking because the field is optional — TypeScript
+consumers see it as `string | undefined`, JavaScript consumers see
+it appear when relevant. Other sources should adopt the same field
+in their 429 (and ideally 4xx/5xx) paths in subsequent patches.
+
+### Turbo `^build` can race with parallel DTS generation
+
+When `@svedata/data`'s tsup DTS build starts before `@svedata/types`'
+DTS finishes writing `dist/index.d.ts`, the consumer gets a stale
+type resolution and fails with TS2305 ("no exported member"). A
+fresh `bun run build` after deleting all `dist/` directories
+typically resolves it; rare but worth knowing when touching the
+shared types package.
+
+---
+
 ## Lessons from v0.1.2 (SCB Swedish search default)
 
 ### SCB matches search queries against table labels in the requested language

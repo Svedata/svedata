@@ -2,13 +2,33 @@
 
 ## 0.1.2
 
-Fix: `svedata.scb.search` now defaults to `lang: 'sv'` instead of
-`'en'`. SCB matches the `query` parameter against table labels in
-the requested language, so the English default returned 0 results
-for the obvious Swedish input like `search('befolkning')`. English
-queries still work — pass `{ lang: 'en' }` explicitly. Same default
-change applies to `svedata.scb.table` and `svedata.scb.data` for
-consistency.
+Two user-experience fixes.
+
+**SCB now defaults to Swedish search.** `svedata.scb.search` (and
+`svedata.scb.table` / `svedata.scb.data` for consistency) now default
+to `lang: 'sv'` instead of `'en'`. SCB matches the `query` parameter
+against table labels in the requested language, so the English default
+returned 0 results for obvious Swedish input like `search('befolkning')`.
+English queries still work — pass `{ lang: 'en' }` explicitly.
+
+**Riksbanken handles rate limits more gracefully.** When the Riksbank
+API returns 429, the SDK now:
+
+- Parses `Retry-After` header or the body's "Try again in N seconds"
+  message
+- If the wait is ≤ 10 seconds, sleeps and retries once
+- If the retry succeeds, the user gets data with no visible error
+- If the retry fails (or the wait would be > 10 seconds), returns
+  `{ data: null, meta: { rate_limit_remaining: 0, error: 'rate_limited' } }`
+
+A new optional `meta.error` field (`'rate_limited' | 'not_found' |
+'upstream_error'`) lets consumers distinguish a rate-limit from
+genuinely-missing data. The field is set by Riksbanken's 429 path
+in v0.1.2; other sources will adopt it incrementally.
+
+The retry is deliberately conservative — Riksbanken's "try again"
+timer resets on every 429, so aggressive retries make the problem
+worse. Long waits stay the consumer's responsibility.
 
 ## 0.1.1
 

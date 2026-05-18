@@ -8,7 +8,10 @@ export type Meta = {
   fetched_at: string;
   cached: boolean;
   rate_limit_remaining: number | null;
+  error?: MetaError;
 };
+
+export type MetaError = 'rate_limited' | 'not_found' | 'upstream_error';
 
 export type Money = {
   amount: number;

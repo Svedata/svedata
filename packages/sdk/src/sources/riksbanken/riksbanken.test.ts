@@ -50,7 +50,7 @@ describe('svedata.riksbanken.exchange', () => {
     expect(result.data).toBeNull();
   });
 
-  it('hanterar 429 med rate_limit_remaining = 0', async () => {
+  it('hanterar 429 med rate_limit_remaining = 0 och meta.error = "rate_limited"', async () => {
     server.use(
       http.get(
         `${BASE_URL}/Observations/Latest/ByGroup/${FX_GROUP_ID}`,
@@ -62,6 +62,74 @@ describe('svedata.riksbanken.exchange', () => {
 
     expect(result.data).toBeNull();
     expect(result.meta.rate_limit_remaining).toBe(0);
+    expect(result.meta.error).toBe('rate_limited');
+  });
+
+  it('retry:ar en gång när 429-body säger "try again in 0 seconds" och lyckas', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${BASE_URL}/Observations/Latest/ByGroup/${FX_GROUP_ID}`, () => {
+        calls++;
+        if (calls === 1) {
+          return HttpResponse.json(
+            { statusCode: 429, message: 'Rate limit is exceeded. Try again in 0 seconds.' },
+            { status: 429 },
+          );
+        }
+        return HttpResponse.json([
+          { seriesId: FX_SERIES.EUR, date: '2026-05-12', value: 10.89 },
+          { seriesId: FX_SERIES.USD, date: '2026-05-12', value: 9.27 },
+          { seriesId: FX_SERIES.GBP, date: '2026-05-12', value: 12.45 },
+          { seriesId: FX_SERIES.NOK, date: '2026-05-12', value: 0.91 },
+          { seriesId: FX_SERIES.DKK, date: '2026-05-12', value: 1.46 },
+        ]);
+      }),
+    );
+
+    const result = await svedata.riksbanken.exchange();
+
+    expect(calls).toBe(2);
+    expect(result.data?.rates.EUR).toBe(10.89);
+    expect(result.meta.error).toBeUndefined();
+  });
+
+  it('retry:ar inte när 429 säger längre wait än 10 sekunder', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${BASE_URL}/Observations/Latest/ByGroup/${FX_GROUP_ID}`, () => {
+        calls++;
+        return HttpResponse.json(
+          { statusCode: 429, message: 'Rate limit is exceeded. Try again in 39 seconds.' },
+          { status: 429 },
+        );
+      }),
+    );
+
+    const result = await svedata.riksbanken.exchange();
+
+    expect(calls).toBe(1);
+    expect(result.data).toBeNull();
+    expect(result.meta.error).toBe('rate_limited');
+  });
+
+  it('respekterar Retry-After-header (i sekunder) framför body-meddelande', async () => {
+    let calls = 0;
+    server.use(
+      http.get(`${BASE_URL}/Observations/Latest/ByGroup/${FX_GROUP_ID}`, () => {
+        calls++;
+        if (calls === 1) {
+          return new HttpResponse(null, { status: 429, headers: { 'Retry-After': '0' } });
+        }
+        return HttpResponse.json([
+          { seriesId: FX_SERIES.EUR, date: '2026-05-12', value: 10.89 },
+        ]);
+      }),
+    );
+
+    const result = await svedata.riksbanken.exchange();
+
+    expect(calls).toBe(2);
+    expect(result.data?.rates.EUR).toBe(10.89);
   });
 });
 

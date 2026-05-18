@@ -19,6 +19,7 @@ export const svedata = {
 export type {
   Envelope,
   Meta,
+  MetaError,
   Money,
   Lang,
   SmhiCurrentWeather,

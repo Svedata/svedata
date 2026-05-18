@@ -28,16 +28,65 @@ type LatestObservation = { date: string; value: number };
 type RangeObservation = { date: string; value: number };
 type GroupObservation = { seriesId: string; date: string; value: number };
 
-async function fetchJson<T>(
+const MAX_RETRY_WAIT_SECONDS = 10;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function parse429WaitSeconds(res: Response): Promise<number | null> {
+  const header = res.headers.get('Retry-After');
+  if (header) {
+    const sec = Number.parseInt(header, 10);
+    if (Number.isFinite(sec) && sec >= 0) return sec;
+  }
+  try {
+    const body = (await res.clone().json()) as { message?: string };
+    const m = body.message?.match(/try again in (\d+)\s*seconds?/i);
+    if (m) return Number.parseInt(m[1]!, 10);
+  } catch {
+    // not JSON — fall through
+  }
+  return null;
+}
+
+async function rawFetch<T>(
   path: string,
-): Promise<{ kind: 'ok'; body: T } | { kind: 'empty' } | { kind: 'rate_limited' }> {
+): Promise<
+  | { kind: 'ok'; body: T }
+  | { kind: 'empty' }
+  | { kind: 'rate_limited'; waitSeconds: number | null }
+> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { Accept: 'application/json' },
   });
-  if (res.status === 429) return { kind: 'rate_limited' };
+  if (res.status === 429) {
+    return { kind: 'rate_limited', waitSeconds: await parse429WaitSeconds(res) };
+  }
   if (!res.ok) return { kind: 'empty' };
   const body = (await res.json()) as T;
   return { kind: 'ok', body };
+}
+
+async function fetchJson<T>(
+  path: string,
+): Promise<{ kind: 'ok'; body: T } | { kind: 'empty' } | { kind: 'rate_limited' }> {
+  const first = await rawFetch<T>(path);
+  if (first.kind !== 'rate_limited') return first;
+
+  // One retry, only if the upstream tells us a short wait. Riksbanken's
+  // sticky 429 behaviour means quick blind retries can reset the cooldown
+  // — only wait when the server gave us a number, and cap it.
+  const wait = first.waitSeconds;
+  if (wait === null || wait > MAX_RETRY_WAIT_SECONDS) {
+    return { kind: 'rate_limited' };
+  }
+  await sleep(wait * 1000);
+  const second = await rawFetch<T>(path);
+  if (second.kind === 'rate_limited') return { kind: 'rate_limited' };
+  return second;
 }
 
 function normalizePair(pair: string): CurrencyCode | null {
@@ -52,7 +101,7 @@ export const riksbanken = {
     const result = await fetchJson<GroupObservation[]>(
       `/Observations/Latest/ByGroup/${FX_GROUP_ID}`,
     );
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
+    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
     if (result.kind === 'empty') return empty(makeMeta(SOURCE));
 
     const rates: Record<CurrencyCode, number | null> = {
@@ -78,7 +127,7 @@ export const riksbanken = {
     const latest = await fetchJson<LatestObservation>(
       `/Observations/Latest/${POLICY_SERIES}`,
     );
-    if (latest.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
+    if (latest.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
     if (latest.kind === 'empty') return empty(makeMeta(SOURCE));
 
     const fromDate = new Date(latest.body.date);
@@ -121,7 +170,7 @@ export const riksbanken = {
       `/Observations/${seriesId}/${from}/${to}`,
     );
 
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
+    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
     if (result.kind === 'empty') return empty(makeMeta(SOURCE));
 
     return ok(

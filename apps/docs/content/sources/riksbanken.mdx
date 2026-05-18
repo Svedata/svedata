@@ -71,5 +71,21 @@ exponerade i v0.1.
 Följer Svedatas envelope-konvention:
 
 - 404 / okänt valutapar → `{ data: null, meta }`
-- 429 (rate-limit) → `{ data: null, meta: { rate_limit_remaining: 0 } }`
+- 429 → SDK:n försöker en gång till om Riksbanken berättar att väntetiden
+  är ≤ 10 sekunder (via `Retry-After`-header eller bodyns
+  "Try again in N seconds"-meddelande). Om retry också failar, eller
+  väntetiden är längre, returneras:
+
+  ```ts
+  { data: null, meta: { rate_limit_remaining: 0, error: 'rate_limited' } }
+  ```
+
+  Använd `meta.error === 'rate_limited'` för att skilja rate-limit från
+  saknade data i UI:t.
 - Inga exceptions kastas
+
+Varför inte längre väntetider i retry-en? Riksbankens "Try again in N
+seconds"-timer nollställs vid varje 429-svar; aggressiva eller långa
+retries förvärrar problemet. SDK:n begränsar retry till korta väntetider
+och rapporterar tydligt i `meta` när användaren behöver backa själv
+(t.ex. exponential backoff i applikationskoden).
