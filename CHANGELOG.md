@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2
+
+Fix: `svedata.scb.search` now defaults to `lang: 'sv'` instead of
+`'en'`. SCB matches the `query` parameter against table labels in
+the requested language, so the English default returned 0 results
+for the obvious Swedish input like `search('befolkning')`. English
+queries still work — pass `{ lang: 'en' }` explicitly. Same default
+change applies to `svedata.scb.table` and `svedata.scb.data` for
+consistency.
+
 ## 0.1.1
 
 Fix: published tarballs now resolve workspace dependencies to concrete

@@ -47,6 +47,43 @@ describe('svedata.scb.search', () => {
     expect(result.meta.source).toBe('scb');
   });
 
+  it("defaultar till lang=sv så svenska sökord matchar svenska tabell-labels", async () => {
+    server.use(
+      http.get(`${BASE_URL}/tables`, ({ request }) => {
+        const url = new URL(request.url);
+        expect(url.searchParams.get('lang')).toBe('sv');
+        expect(url.searchParams.get('query')).toBe('befolkning');
+        return HttpResponse.json({
+          language: 'sv',
+          tables: [sampleTable, sampleTable, sampleTable],
+          page: { pageNumber: 1, pageSize: 20, totalElements: 173 },
+        });
+      }),
+    );
+
+    const result = await svedata.scb.search('befolkning');
+
+    expect(result.data?.total).toBe(173);
+    expect(result.data?.tables).toHaveLength(3);
+  });
+
+  it("respekterar explicit lang=en för engelska sökord", async () => {
+    server.use(
+      http.get(`${BASE_URL}/tables`, ({ request }) => {
+        const url = new URL(request.url);
+        expect(url.searchParams.get('lang')).toBe('en');
+        return HttpResponse.json({
+          language: 'en',
+          tables: [sampleTable],
+          page: { pageNumber: 1, pageSize: 20, totalElements: 315 },
+        });
+      }),
+    );
+
+    const result = await svedata.scb.search('population', { lang: 'en' });
+    expect(result.data?.total).toBe(315);
+  });
+
   it('returnerar { data: null } vid 404', async () => {
     server.use(http.get(`${BASE_URL}/tables`, () => new HttpResponse(null, { status: 404 })));
 

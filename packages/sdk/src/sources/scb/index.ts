@@ -76,7 +76,7 @@ export type ScbDataOptions = {
 
 export const scb = {
   async search(query: string, options: ScbSearchOptions = {}): Promise<Envelope<ScbSearchResult>> {
-    const lang = options.lang ?? 'en';
+    const lang = options.lang ?? 'sv';
     const page = options.page ?? 1;
     const pageSize = options.pageSize ?? 20;
     const params = new URLSearchParams({
@@ -103,7 +103,7 @@ export const scb = {
   },
 
   async table(tableId: string, options: ScbDataOptions = {}): Promise<Envelope<ScbTable>> {
-    const lang = options.lang ?? 'en';
+    const lang = options.lang ?? 'sv';
     const result = await fetchJson<RawTable>(
       `/tables/${encodeURIComponent(tableId)}?lang=${lang}`,
     );
@@ -120,7 +120,7 @@ export const scb = {
   },
 
   async data(tableId: string, options: ScbDataOptions = {}): Promise<Envelope<ScbDataset>> {
-    const lang = options.lang ?? 'en';
+    const lang = options.lang ?? 'sv';
     const result = await fetchJson<RawDataset>(
       `/tables/${encodeURIComponent(tableId)}/data?lang=${lang}&outputFormat=json-stat2`,
     );

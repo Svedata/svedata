@@ -19,15 +19,25 @@ inklusive `id`, `label`, `first_period`, `last_period` och
 `variable_names`.
 
 ```ts
-const { data } = await svedata.scb.search('Population by region', {
+// Default lang är 'sv' — sök på svenska
+const { data } = await svedata.scb.search('befolkning', { pageSize: 10 });
+// data.total = 173
+// data.tables[0].label = 'Befolkningens anslutning till ...'
+
+// Engelska sökord kräver lang: 'en'
+const en = await svedata.scb.search('Population by region', {
   lang: 'en',
   pageSize: 10,
 });
-// data.total = 235
-// data.tables[0].id = 'TAB4562'
+// en.data.total = 315
 ```
 
-`options.lang`: `'en'` (default) eller `'sv'`.
+**SCB söker mot tabellernas labels i det språk man frågar.** En svensk
+sökterm med `lang: 'en'` ger 0 träffar och vice versa. Default är `'sv'`
+eftersom Svedata primärt används mot svensk data — sätt `lang: 'en'`
+explicit för engelska sökord.
+
+`options.lang`: `'sv'` (default) eller `'en'`.
 `options.page`: sidnummer (default 1).
 `options.pageSize`: max-resultat per sida (default 20).
 

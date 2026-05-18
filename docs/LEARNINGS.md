@@ -319,6 +319,40 @@ return the raw string.
 
 ---
 
+## Lessons from v0.1.2 (SCB Swedish search default)
+
+### SCB matches search queries against table labels in the requested language
+
+`statistikdatabasen.scb.se/api/v2/tables?query=X&lang=Y` matches `X`
+against table labels in language `Y`. Swedish search term with
+`lang=en` → 0 hits; English search term with `lang=sv` → very few
+hits (only words that happen to occur in Swedish labels).
+
+This means the `lang` parameter is not just a presentation choice —
+it determines which corpus is being searched. Default was `'en'`
+in v0.1.0/v0.1.1; that returned 0 results for the obvious Swedish
+input (`'befolkning'`) which is the primary use case for a Swedish
+SDK. v0.1.2 flips the default to `'sv'`. Engelska sökord behöver nu
+`{ lang: 'en' }` explicit.
+
+Practical: when a source supports `lang`, document explicitly
+*what* it controls. If it filters/matches (not just presents), the
+default should match the SDK's primary user. For Svedata that is
+Swedish.
+
+### Default-value bugs hide in green test suites
+
+The original SCB tests passed both `query: 'befolkning'` and
+`lang: 'sv'` explicitly in every assertion. The default behavior
+was never tested. The bug only surfaced when a user called the
+method the way real users do — without options.
+
+Practical: for every method with optional parameters, add at least
+one test that exercises the default path. Cheap to write, catches
+this class of bug before users do.
+
+---
+
 ## Lessons from v0.1.1 hotfix (workspace:* on registry)
 
 ### `npm publish` runs `npm pack` internally — and `npm pack` does NOT rewrite `workspace:`
