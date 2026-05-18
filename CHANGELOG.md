@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.1.3
+
+v0.1.3 improves consistency across all sources after an external review pass.
+No breaking changes — every existing call site keeps working, but the
+envelope now carries more useful information and edge cases are handled
+more predictably.
+
+The most visible change is that `meta.error` is now populated by every
+source, not just Riksbanken. A consumer that sees `{ data: null }` can
+now read `meta.error` to distinguish a rate-limit (`'rate_limited'`)
+from a missing record (`'not_found'`) from an upstream failure
+(`'upstream_error'`). Internal-lookup misses — for example calling
+`smhi.current('Trelleborg')` against the built-in city list — also
+report `'not_found'` rather than a bare `null`.
+
+Polisen's `events()` had a small but confusing bug where `total`
+reported the truncated count when `limit` was set. It now matches
+the convention in `scb.search` and `riksdagen.documents` and reports
+the upstream count regardless of truncation. SMHI's `current()` now
+accepts a `{ latitude, longitude }` coordinate pair as an alternative
+to a city name, so you're not limited to the 17 built-in cities. A
+`smhi.forecast()` alias is provided to make the data semantics
+explicit — the underlying SMHI endpoint is a forecast API, not an
+observation feed.
+
+Nord Pool's envelope is more honest: `meta.source` now reads
+`'elprisetjustnu'` rather than `'nordpool'`, surfacing the
+community proxy that actually serves the data (Nord Pool's own API
+is commercial). The data and method names are unchanged.
+
+Outbound HTTP now identifies the SDK with a single shared User-Agent
+(`svedata/0.1 (+https://github.com/Svedata/svedata)`) on every call,
+not just Polisen. Defensive null-checks were added in every source
+parser so a malformed or unexpected upstream response yields
+`{ data: null, meta: { error: 'upstream_error' } }` instead of a
+crash.
+
+v0.1.2 is not deprecated — nothing in it is broken; v0.1.3 is just
+more consistent.
+
 ## 0.1.2
 
 Two user-experience fixes.

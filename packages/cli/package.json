@@ -1,6 +1,6 @@
 {
   "name": "@svedata/cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Kommandoradsverktyg för Svedata",
   "license": "MIT",
   "type": "module",

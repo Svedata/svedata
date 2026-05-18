@@ -1,6 +1,6 @@
 {
   "name": "@svedata/types",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Delade TypeScript-typer för Svedata SDK",
   "license": "MIT",
   "type": "module",
