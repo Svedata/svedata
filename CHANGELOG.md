@@ -30,6 +30,16 @@ The retry is deliberately conservative — Riksbanken's "try again"
 timer resets on every 429, so aggressive retries make the problem
 worse. Long waits stay the consumer's responsibility.
 
+### Documentation
+
+- Documented that SCB's `lang` parameter affects search linguistics,
+  not just presentation. Different languages return different result
+  counts because SCB's metadata coverage varies — e.g.
+  `search('befolkning')` (sv) returns ~173 tables, while
+  `search('population', { lang: 'en' })` returns ~315. See the
+  [SCB source docs](https://docs.svedata.dev/sources/scb#language-and-search-results)
+  for guidance on which language to pick.
+
 ## 0.1.1
 
 Fix: published tarballs now resolve workspace dependencies to concrete

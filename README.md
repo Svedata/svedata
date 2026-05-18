@@ -62,10 +62,16 @@ await svedata.riksbanken.history('EURSEK', '2026-05-01', '2026-05-12');
 ### SCB — Statistical database (PxWebAPI 2.0)
 
 ```ts
-await svedata.scb.search('Population by region');
+await svedata.scb.search('befolkning');                          // default sv
+await svedata.scb.search('Population by region', { lang: 'en' });
 await svedata.scb.table('TAB638');
-await svedata.scb.data('TAB638');                 // returns JSON-Stat 2.0
+await svedata.scb.data('TAB638');                                // returns JSON-Stat 2.0
 ```
+
+Note: `lang` controls both presentation and search linguistics, and
+different languages return different result counts because SCB's
+metadata coverage varies. See [the SCB source docs](https://docs.svedata.dev/sources/scb#language-and-search-results)
+for details.
 
 ### Riksdagen — documents and members
 

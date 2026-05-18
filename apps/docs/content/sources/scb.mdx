@@ -67,6 +67,38 @@ För komplicerade urval (filtrera regioner, år, etc.) hämta tabellen
 direkt med en HTTP-klient mot PxWebAPI 2.0 i v0.1 — flat-query-stöd
 kommer i en senare version.
 
+## Language and search results
+
+SCB:s `lang`-parameter påverkar **både presentation och söklingvistik**.
+Den är inte bara en visningsswitch — den väljer också vilket korpus
+sökningen körs mot.
+
+**Träffmängden skiljer sig mellan språk** eftersom SCB:s metadata-
+täckning varierar. Engelska labels finns på fler tabeller än svenska,
+och vissa termer är semantiskt bredare i ett språk än i ett annat:
+
+| Anrop | Träffar |
+|---|---|
+| `search('befolkning')` (default `lang: 'sv'`) | ~173 |
+| `search('population', { lang: 'en' })` | ~315 |
+
+Det är inte en bug i SDK:n — det är vad SCB returnerar. "Population"
+är ett bredare paraplybegrepp på engelska och täcker tabeller från
+fler ämnesområden än det snävare svenska "befolkning". Engelska
+metadata finns dessutom på fler tabeller totalt sett.
+
+**Rekommendation:**
+
+- Använd det språk som matchar din målgrupp och din data. Svensk för
+  svenska use-cases (myndighetsrapporter, lokala dashboards). Engelska
+  för internationella jämförelser eller publikationer.
+- Kör söket på båda språken om du behöver maximal täckning — det är
+  två separata anrop, ingen automatisk union.
+
+**Sökning returnerar metadata, inte data.** `search()` ger en lista
+av tabellsammanfattningar (`id`, `label`, `first_period`, ...). Hämta
+faktisk data genom att skicka ett tabell-id till `svedata.scb.data(id)`.
+
 ## Felhantering
 
 - 404 / okänd tabell → `{ data: null, meta }`
