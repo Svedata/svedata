@@ -1,9 +1,9 @@
 import type { Envelope, PolisenEvent, PolisenEventsResult } from '@svedata/types';
 import { empty, makeMeta, ok } from '../../lib/envelope.js';
+import { svedataFetch } from '../../lib/http.js';
 
 const SOURCE = 'polisen';
 const BASE_URL = 'https://polisen.se';
-const USER_AGENT = 'svedata/0.1 (+https://github.com/Svedata/svedata)';
 
 type RawEvent = {
   id: number;
@@ -72,15 +72,24 @@ export const polisen = {
     const qs = params.toString();
     const url = `${BASE_URL}/api/events${qs ? `?${qs}` : ''}`;
 
-    const res = await fetch(url, {
-      headers: { Accept: 'application/json', 'User-Agent': USER_AGENT },
-    });
+    let res: Response;
+    try {
+      res = await svedataFetch(url);
+    } catch {
+      return empty(makeMeta(SOURCE, null, false, 'upstream_error'));
+    }
 
-    if (res.status === 429) return empty(makeMeta(SOURCE, 0));
-    if (!res.ok) return empty(makeMeta(SOURCE));
+    if (res.status === 404) return empty(makeMeta(SOURCE, null, false, 'not_found'));
+    if (res.status === 429) return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
+    if (!res.ok) return empty(makeMeta(SOURCE, null, false, 'upstream_error'));
 
-    const body = (await res.json()) as RawEvent[];
-    if (!Array.isArray(body)) return empty(makeMeta(SOURCE));
+    let body: RawEvent[];
+    try {
+      body = (await res.json()) as RawEvent[];
+    } catch {
+      return empty(makeMeta(SOURCE, null, false, 'upstream_error'));
+    }
+    if (!Array.isArray(body)) return empty(makeMeta(SOURCE, null, false, 'upstream_error'));
 
     const total = body.length;
     const limited = options.limit ? body.slice(0, options.limit) : body;

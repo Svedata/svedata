@@ -6,6 +6,7 @@ import type {
   RiksbankenPolicyRate,
 } from '@svedata/types';
 import { empty, makeMeta, ok } from '../../lib/envelope.js';
+import { svedataFetch } from '../../lib/http.js';
 
 const SOURCE = 'riksbanken';
 const BASE_URL = 'https://api.riksbank.se/swea/v1';
@@ -52,27 +53,39 @@ async function parse429WaitSeconds(res: Response): Promise<number | null> {
   return null;
 }
 
-async function rawFetch<T>(
-  path: string,
-): Promise<
+type RawFetchResult<T> =
   | { kind: 'ok'; body: T }
-  | { kind: 'empty' }
-  | { kind: 'rate_limited'; waitSeconds: number | null }
-> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { Accept: 'application/json' },
-  });
+  | { kind: 'not_found' }
+  | { kind: 'upstream_error' }
+  | { kind: 'rate_limited'; waitSeconds: number | null };
+
+async function rawFetch<T>(path: string): Promise<RawFetchResult<T>> {
+  let res: Response;
+  try {
+    res = await svedataFetch(`${BASE_URL}${path}`);
+  } catch {
+    return { kind: 'upstream_error' };
+  }
+  if (res.status === 404) return { kind: 'not_found' };
   if (res.status === 429) {
     return { kind: 'rate_limited', waitSeconds: await parse429WaitSeconds(res) };
   }
-  if (!res.ok) return { kind: 'empty' };
-  const body = (await res.json()) as T;
-  return { kind: 'ok', body };
+  if (!res.ok) return { kind: 'upstream_error' };
+  try {
+    const body = (await res.json()) as T;
+    return { kind: 'ok', body };
+  } catch {
+    return { kind: 'upstream_error' };
+  }
 }
 
-async function fetchJson<T>(
-  path: string,
-): Promise<{ kind: 'ok'; body: T } | { kind: 'empty' } | { kind: 'rate_limited' }> {
+type FetchJsonResult<T> =
+  | { kind: 'ok'; body: T }
+  | { kind: 'not_found' }
+  | { kind: 'rate_limited' }
+  | { kind: 'upstream_error' };
+
+async function fetchJson<T>(path: string): Promise<FetchJsonResult<T>> {
   const first = await rawFetch<T>(path);
   if (first.kind !== 'rate_limited') return first;
 
@@ -89,6 +102,11 @@ async function fetchJson<T>(
   return second;
 }
 
+function emptyRb<T>(kind: 'not_found' | 'rate_limited' | 'upstream_error'): Envelope<T> {
+  if (kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
+  return empty(makeMeta(SOURCE, null, false, kind));
+}
+
 function normalizePair(pair: string): CurrencyCode | null {
   const cleaned = pair.toUpperCase().replace(/[^A-Z]/g, '');
   const code = cleaned.startsWith('SEK') ? cleaned.slice(3, 6) : cleaned.slice(0, 3);
@@ -96,13 +114,31 @@ function normalizePair(pair: string): CurrencyCode | null {
   return null;
 }
 
+/**
+ * Currency pair accepted by {@link riksbanken.history}. Case-insensitive,
+ * and dashes/slashes are stripped — `'EURSEK'`, `'EUR/SEK'`, `'eur-sek'`
+ * all resolve to the same series.
+ */
+export type RiksbankenPair =
+  | 'EURSEK'
+  | 'USDSEK'
+  | 'GBPSEK'
+  | 'NOKSEK'
+  | 'DKKSEK'
+  | 'SEKEUR'
+  | 'SEKUSD'
+  | 'SEKGBP'
+  | 'SEKNOK'
+  | 'SEKDKK'
+  | (string & {});
+
 export const riksbanken = {
   async exchange(): Promise<Envelope<RiksbankenExchange>> {
     const result = await fetchJson<GroupObservation[]>(
       `/Observations/Latest/ByGroup/${FX_GROUP_ID}`,
     );
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyRb<RiksbankenExchange>(result.kind);
+    if (!Array.isArray(result.body)) return emptyRb<RiksbankenExchange>('upstream_error');
 
     const rates: Record<CurrencyCode, number | null> = {
       EUR: null,
@@ -119,7 +155,7 @@ export const riksbanken = {
       if (!latestDate || obs.date > latestDate) latestDate = obs.date;
     }
 
-    if (!latestDate) return empty(makeMeta(SOURCE));
+    if (!latestDate) return emptyRb<RiksbankenExchange>('upstream_error');
     return ok({ date: latestDate, rates }, makeMeta(SOURCE));
   },
 
@@ -127,8 +163,8 @@ export const riksbanken = {
     const latest = await fetchJson<LatestObservation>(
       `/Observations/Latest/${POLICY_SERIES}`,
     );
-    if (latest.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
-    if (latest.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (latest.kind !== 'ok') return emptyRb<RiksbankenPolicyRate>(latest.kind);
+    if (!latest.body?.date) return emptyRb<RiksbankenPolicyRate>('upstream_error');
 
     const fromDate = new Date(latest.body.date);
     fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 3);
@@ -139,7 +175,7 @@ export const riksbanken = {
     );
 
     let lastChange: string | null = null;
-    if (range.kind === 'ok' && range.body.length > 0) {
+    if (range.kind === 'ok' && Array.isArray(range.body) && range.body.length > 0) {
       const series = range.body;
       const current = latest.body.value;
       for (let i = series.length - 1; i >= 0; i--) {
@@ -157,21 +193,24 @@ export const riksbanken = {
     );
   },
 
+  /**
+   * Historical exchange rates for a currency pair. Dates are ISO `YYYY-MM-DD`.
+   */
   async history(
-    pair: string,
+    pair: RiksbankenPair,
     from: string,
     to: string,
   ): Promise<Envelope<RiksbankenHistory>> {
     const code = normalizePair(pair);
-    if (!code) return empty(makeMeta(SOURCE));
+    if (!code) return emptyRb<RiksbankenHistory>('not_found');
 
     const seriesId = FX_SERIES[code];
     const result = await fetchJson<RangeObservation[]>(
       `/Observations/${seriesId}/${from}/${to}`,
     );
 
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyRb<RiksbankenHistory>(result.kind);
+    if (!Array.isArray(result.body)) return emptyRb<RiksbankenHistory>('upstream_error');
 
     return ok(
       {

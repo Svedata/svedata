@@ -6,6 +6,7 @@ import type {
   TrafikverketTrainsResult,
 } from '@svedata/types';
 import { empty, makeMeta, ok } from '../../lib/envelope.js';
+import { svedataFetch } from '../../lib/http.js';
 
 const SOURCE = 'trafikverket';
 const BASE_URL = 'https://api.trafikinfo.trafikverket.se/v2/data.json';
@@ -42,32 +43,52 @@ type TvResponse = {
   RESPONSE: { RESULT: TvResult[] };
 };
 
-async function postQuery<T>(
-  query: string,
-): Promise<{ kind: 'ok'; rows: T[] } | { kind: 'empty' } | { kind: 'rate_limited' }> {
+type PostResult<T> =
+  | { kind: 'ok'; rows: T[] }
+  | { kind: 'not_found' }
+  | { kind: 'rate_limited' }
+  | { kind: 'upstream_error' };
+
+async function postQuery<T>(query: string): Promise<PostResult<T>> {
   const apiKey = getApiKey();
   const body = `<REQUEST><LOGIN authenticationkey="${apiKey}"/>${query}</REQUEST>`;
-  const res = await fetch(BASE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/xml', Accept: 'application/json' },
-    body,
-  });
+  let res: Response;
+  try {
+    res = await svedataFetch(BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/xml' },
+      body,
+    });
+  } catch {
+    return { kind: 'upstream_error' };
+  }
 
   if (res.status === 401 || res.status === 403) {
     throw new Error(`Trafikverket auth failed (HTTP ${res.status})`);
   }
+  if (res.status === 404) return { kind: 'not_found' };
   if (res.status === 429) return { kind: 'rate_limited' };
-  if (!res.ok) return { kind: 'empty' };
+  if (!res.ok) return { kind: 'upstream_error' };
 
-  const json = (await res.json()) as TvResponse;
+  let json: TvResponse;
+  try {
+    json = (await res.json()) as TvResponse;
+  } catch {
+    return { kind: 'upstream_error' };
+  }
   const result = json.RESPONSE?.RESULT?.[0];
-  if (!result) return { kind: 'empty' };
+  if (!result) return { kind: 'upstream_error' };
   if (result.ERROR) throw new Error(`Trafikverket error: ${result.ERROR.MESSAGE ?? 'unknown'}`);
 
   for (const value of Object.values(result)) {
     if (Array.isArray(value)) return { kind: 'ok', rows: value as T[] };
   }
   return { kind: 'ok', rows: [] };
+}
+
+function emptyTv<T>(kind: 'not_found' | 'rate_limited' | 'upstream_error'): Envelope<T> {
+  if (kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
+  return empty(makeMeta(SOURCE, null, false, kind));
 }
 
 type RawTrain = {
@@ -144,8 +165,7 @@ export const trafikverket = {
     const query = `<QUERY objecttype="TrainAnnouncement" schemaversion="${TRAIN_SCHEMA}" limit="${limit}" orderby="AdvertisedTimeAtLocation">${filter}</QUERY>`;
 
     const result = await postQuery<RawTrain>(query);
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyTv<TrafikverketTrainsResult>(result.kind);
 
     return ok(
       { total: result.rows.length, trains: result.rows.map(mapTrain) },
@@ -164,8 +184,7 @@ export const trafikverket = {
     const query = `<QUERY objecttype="Situation" schemaversion="${SITUATION_SCHEMA}" limit="${limit}">${filter}</QUERY>`;
 
     const result = await postQuery<RawSituation>(query);
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyTv<TrafikverketSituationsResult>(result.kind);
 
     return ok(
       { total: result.rows.length, situations: result.rows.map(mapSituation) },

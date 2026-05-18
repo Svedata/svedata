@@ -6,6 +6,7 @@ import type {
   RiksdagenMemberList,
 } from '@svedata/types';
 import { empty, makeMeta, ok } from '../../lib/envelope.js';
+import { svedataFetch } from '../../lib/http.js';
 
 const SOURCE = 'riksdagen';
 const BASE_URL = 'https://data.riksdagen.se';
@@ -107,16 +108,33 @@ function mapMember(p: RawPerson): RiksdagenMember {
   };
 }
 
-async function fetchJson<T>(
-  path: string,
-): Promise<{ kind: 'ok'; body: T } | { kind: 'empty' } | { kind: 'rate_limited' }> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { Accept: 'application/json' },
-  });
+type FetchResult<T> =
+  | { kind: 'ok'; body: T }
+  | { kind: 'not_found' }
+  | { kind: 'rate_limited' }
+  | { kind: 'upstream_error' };
+
+async function fetchJson<T>(path: string): Promise<FetchResult<T>> {
+  let res: Response;
+  try {
+    res = await svedataFetch(`${BASE_URL}${path}`);
+  } catch {
+    return { kind: 'upstream_error' };
+  }
+  if (res.status === 404) return { kind: 'not_found' };
   if (res.status === 429) return { kind: 'rate_limited' };
-  if (!res.ok) return { kind: 'empty' };
-  const body = (await res.json()) as T;
-  return { kind: 'ok', body };
+  if (!res.ok) return { kind: 'upstream_error' };
+  try {
+    const body = (await res.json()) as T;
+    return { kind: 'ok', body };
+  } catch {
+    return { kind: 'upstream_error' };
+  }
+}
+
+function emptyFor<T>(kind: 'not_found' | 'rate_limited' | 'upstream_error'): Envelope<T> {
+  if (kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
+  return empty(makeMeta(SOURCE, null, false, kind));
 }
 
 export type RiksdagenDocumentsOptions = {
@@ -145,10 +163,10 @@ export const riksdagen = {
     params.set('sz', String(options.pageSize ?? 20));
 
     const result = await fetchJson<RawDocList>(`/dokumentlista/?${params}`);
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyFor<RiksdagenDocumentList>(result.kind);
 
-    const list = result.body.dokumentlista;
+    const list = result.body?.dokumentlista;
+    if (!list) return emptyFor<RiksdagenDocumentList>('upstream_error');
     return ok(
       {
         query: options.query ?? null,
@@ -170,10 +188,11 @@ export const riksdagen = {
     if (options.pageSize) params.set('sz', String(options.pageSize));
 
     const result = await fetchJson<RawPersonList>(`/personlista/?${params}`);
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyFor<RiksdagenMemberList>(result.kind);
 
-    const list = result.body.personlista;
+    const list = result.body?.personlista;
+    if (!list) return emptyFor<RiksdagenMemberList>('upstream_error');
+
     return ok(
       {
         party: options.party ?? null,
