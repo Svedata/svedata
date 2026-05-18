@@ -35,7 +35,7 @@ jobs:
       - name: Build + pack publishable packages
         run: bun run release:pack
 
-      - name: Guard — no workspace: protocol in any tarball
+      - name: "Guard: no workspace protocol in any tarball"
         run: |
           set -euo pipefail
           fail=0
