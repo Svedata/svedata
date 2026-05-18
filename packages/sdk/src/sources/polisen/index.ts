@@ -82,11 +82,9 @@ export const polisen = {
     const body = (await res.json()) as RawEvent[];
     if (!Array.isArray(body)) return empty(makeMeta(SOURCE));
 
+    const total = body.length;
     const limited = options.limit ? body.slice(0, options.limit) : body;
-    return ok(
-      { total: limited.length, events: limited.map(mapEvent) },
-      makeMeta(SOURCE),
-    );
+    return ok({ total, events: limited.map(mapEvent) }, makeMeta(SOURCE));
   },
 };
 
