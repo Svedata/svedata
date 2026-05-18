@@ -69,8 +69,11 @@ describe('svedata.polisen.events', () => {
     );
 
     const result = await svedata.polisen.events({ limit: 2 });
-    expect(result.data?.total).toBe(2);
+    // total reflects the upstream count (3), not the truncated count (2),
+    // matching the convention in scb.search and riksdagen.documents.
+    expect(result.data?.total).toBe(3);
     expect(result.data?.events).toHaveLength(2);
+    expect(result.data!.total).toBeGreaterThanOrEqual(result.data!.events.length);
   });
 
   it('hanterar trasig gps-sträng som null/null', async () => {
