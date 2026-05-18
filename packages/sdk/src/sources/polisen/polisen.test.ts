@@ -88,16 +88,25 @@ describe('svedata.polisen.events', () => {
     expect(result.data?.events[0]?.longitude).toBeNull();
   });
 
-  it('returnerar { data: null } vid 404', async () => {
+  it('sätter meta.error = "not_found" vid 404', async () => {
     server.use(http.get(`${BASE_URL}/api/events`, () => new HttpResponse(null, { status: 404 })));
     const result = await svedata.polisen.events();
     expect(result.data).toBeNull();
+    expect(result.meta.error).toBe('not_found');
   });
 
-  it('hanterar 429 med rate_limit_remaining = 0', async () => {
+  it('sätter meta.error = "rate_limited" med rate_limit_remaining = 0', async () => {
     server.use(http.get(`${BASE_URL}/api/events`, () => new HttpResponse(null, { status: 429 })));
     const result = await svedata.polisen.events();
     expect(result.data).toBeNull();
     expect(result.meta.rate_limit_remaining).toBe(0);
+    expect(result.meta.error).toBe('rate_limited');
+  });
+
+  it('sätter meta.error = "upstream_error" vid 500', async () => {
+    server.use(http.get(`${BASE_URL}/api/events`, () => new HttpResponse(null, { status: 500 })));
+    const result = await svedata.polisen.events();
+    expect(result.data).toBeNull();
+    expect(result.meta.error).toBe('upstream_error');
   });
 });

@@ -7,6 +7,7 @@ import type {
   ScbTableSummary,
 } from '@svedata/types';
 import { empty, makeMeta, ok } from '../../lib/envelope.js';
+import { svedataFetch } from '../../lib/http.js';
 
 const SOURCE = 'scb';
 const BASE_URL = 'https://statistikdatabasen.scb.se/api/v2';
@@ -52,16 +53,33 @@ function mapSummary(t: RawTable): ScbTableSummary {
   };
 }
 
-async function fetchJson<T>(
-  path: string,
-): Promise<{ kind: 'ok'; body: T } | { kind: 'empty' } | { kind: 'rate_limited' }> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { Accept: 'application/json' },
-  });
+type FetchResult<T> =
+  | { kind: 'ok'; body: T }
+  | { kind: 'not_found' }
+  | { kind: 'rate_limited' }
+  | { kind: 'upstream_error' };
+
+async function fetchJson<T>(path: string): Promise<FetchResult<T>> {
+  let res: Response;
+  try {
+    res = await svedataFetch(`${BASE_URL}${path}`);
+  } catch {
+    return { kind: 'upstream_error' };
+  }
+  if (res.status === 404) return { kind: 'not_found' };
   if (res.status === 429) return { kind: 'rate_limited' };
-  if (!res.ok) return { kind: 'empty' };
-  const body = (await res.json()) as T;
-  return { kind: 'ok', body };
+  if (!res.ok) return { kind: 'upstream_error' };
+  try {
+    const body = (await res.json()) as T;
+    return { kind: 'ok', body };
+  } catch {
+    return { kind: 'upstream_error' };
+  }
+}
+
+function emptyFor<T>(kind: 'not_found' | 'rate_limited' | 'upstream_error'): Envelope<T> {
+  if (kind === 'rate_limited') return empty(makeMeta(SOURCE, 0, false, 'rate_limited'));
+  return empty(makeMeta(SOURCE, null, false, kind));
 }
 
 export type ScbSearchOptions = {
@@ -87,16 +105,16 @@ export const scb = {
     });
 
     const result = await fetchJson<RawTablesResponse>(`/tables?${params}`);
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyFor<ScbSearchResult>(result.kind);
 
+    const tables = Array.isArray(result.body?.tables) ? result.body.tables : [];
     return ok(
       {
         query,
         page: result.body.page?.pageNumber ?? page,
         page_size: result.body.page?.pageSize ?? pageSize,
-        total: result.body.page?.totalElements ?? result.body.tables.length,
-        tables: result.body.tables.map(mapSummary),
+        total: result.body.page?.totalElements ?? tables.length,
+        tables: tables.map(mapSummary),
       },
       makeMeta(SOURCE),
     );
@@ -107,8 +125,8 @@ export const scb = {
     const result = await fetchJson<RawTable>(
       `/tables/${encodeURIComponent(tableId)}?lang=${lang}`,
     );
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyFor<ScbTable>(result.kind);
+    if (!result.body?.id) return emptyFor<ScbTable>('upstream_error');
 
     return ok(
       {
@@ -119,20 +137,28 @@ export const scb = {
     );
   },
 
+  /**
+   * Fetches table data as JSON-Stat 2.0 in the `jsonstat` field. The
+   * `jsonstat` field is typed `unknown` because we don't (yet) ship typed
+   * JSON-Stat 2.0 definitions. Use a JSON-Stat library on the consumer
+   * side, or cast to a shape that fits your data.
+   */
   async data(tableId: string, options: ScbDataOptions = {}): Promise<Envelope<ScbDataset>> {
     const lang = options.lang ?? 'sv';
     const result = await fetchJson<RawDataset>(
       `/tables/${encodeURIComponent(tableId)}/data?lang=${lang}&outputFormat=json-stat2`,
     );
-    if (result.kind === 'rate_limited') return empty(makeMeta(SOURCE, 0));
-    if (result.kind === 'empty') return empty(makeMeta(SOURCE));
+    if (result.kind !== 'ok') return emptyFor<ScbDataset>(result.kind);
+    if (!result.body || typeof result.body !== 'object') {
+      return emptyFor<ScbDataset>('upstream_error');
+    }
 
     return ok(
       {
         table_id: tableId,
-        label: result.body.label,
-        source: result.body.source,
-        updated: result.body.updated,
+        label: result.body.label ?? '',
+        source: result.body.source ?? '',
+        updated: result.body.updated ?? '',
         jsonstat: result.body,
       },
       makeMeta(SOURCE),

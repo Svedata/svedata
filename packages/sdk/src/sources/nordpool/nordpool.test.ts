@@ -42,7 +42,7 @@ describe('svedata.nordpool.prices', () => {
       eur_per_kwh: 0.12,
       exr: 10.89,
     });
-    expect(result.meta.source).toBe('nordpool');
+    expect(result.meta.source).toBe('elprisetjustnu');
   });
 
   it('bygger URL:en med rätt år/månad/dag-format', () => {

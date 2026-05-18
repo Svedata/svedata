@@ -49,7 +49,13 @@ errors (e.g. a missing API key for Trafikverket).
 
 ```ts
 await svedata.smhi.current('Stockholm');
+await svedata.smhi.current({ latitude: 59.3293, longitude: 18.0686 });
+await svedata.smhi.forecast('Stockholm');           // alias — same data, clearer name
 ```
+
+Note: backed by SMHI's forecast endpoint, not the observation API.
+`timeSeries[0]` is the next short-range forecast point (≤ 1 hour out),
+which matches "current weather" for typical UI use.
 
 ### Riksbanken — exchange rates and policy rate
 
@@ -85,6 +91,11 @@ await svedata.riksdagen.members({ party: 'M' });
 ```ts
 await svedata.nordpool.prices('SE3');             // 96 × 15-min points for today
 ```
+
+Backed by `elprisetjustnu.se`, a free community proxy that republishes
+ENTSO-E / Nord Pool data. Nord Pool's own API is commercial. `meta.source`
+is `'elprisetjustnu'` to make the actual data origin visible in the
+envelope.
 
 ### Trafikverket — traffic information (requires API key)
 
