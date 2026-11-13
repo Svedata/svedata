@@ -1,0 +1,86 @@
+---
+title: Kolada
+description: Kommun- och regionstatistik (nyckeltal) från RKA
+---
+
+# Kolada
+
+Kolada är RKA:s öppna databas med nyckeltal för Sveriges 290 kommuner
+och 21 regioner (befolkning, skola, omsorg, ekonomi m.m.), via
+`api.kolada.se/v3`. Ingen API-nyckel, inga publicerade rate limits.
+
+**Villkor:** fri användning, även kommersiellt, utan avtal. Om du
+visar Kolada-data i en tjänst ska du ange `Källa: Kolada`. Gör du egna
+bearbetningar får Kolada *inte* anges som källa. Se
+[kolada.se/om-oss/api](https://kolada.se/om-oss/api/).
+
+## Metoder
+
+### `svedata.kolada.kpis(query, options?)`
+
+Sök nyckeltal på titel.
+
+```ts
+const { data } = await svedata.kolada.kpis('invånare totalt', { limit: 5 });
+// data.total = 8
+// data.kpis[0] = {
+//   id: 'N01951',
+//   title: 'Invånare totalt, antal',
+//   description: 'Antal invånare totalt den 31/12. Källa: SCB.',
+//   operating_area: 'Befolkning',
+//   is_divided_by_gender: true,
+//   municipality_type: 'A',          // K = kommun, L = region, A = båda
+//   publication_date: '2027-02-24',
+// }
+```
+
+### `svedata.kolada.municipalities(query?)`
+
+Lista kommuner och regioner, valbart filtrerat på namn.
+
+```ts
+const { data } = await svedata.kolada.municipalities('lund');
+// data.municipalities = [{ id: '1281', title: 'Lund', type: 'municipality' }]
+```
+
+`id` är den fyrsiffriga kommunkoden — samma kod som SCB och
+Arbetsförmedlingen använder. Regioner har koder som `'0012'`
+(Region Skåne) och `type: 'region'`.
+
+### `svedata.kolada.data(kpiId, municipality, options?)`
+
+Värden för ett nyckeltal i en eller flera kommuner.
+
+```ts
+const { data } = await svedata.kolada.data('N01951', ['1281', '0180'], {
+  years: [2022, 2023],   // utelämna för hela historiken
+});
+// data.points[0] = {
+//   municipality: '0180',
+//   period: 2022,
+//   gender: 'female',    // 'total' | 'male' | 'female'
+//   value: 496463,
+//   status: '',
+// }
+```
+
+Punkterna sorteras på period, kommun och kön.
+
+## Egenheter som hanteras åt dig
+
+- **v2 är avvecklad**: `api.kolada.se/v2` svarar HTTP 410. SDK:n
+  använder v3.
+- **Kön som bokstäver**: `T`/`M`/`K` mappas till `total`/`male`/`female`.
+- **Saknade värden**: `value` är `null` och `status` behåller Koladas
+  flagga (t.ex. `'Missing'`).
+- **Paginering**: SDK:n följer `next_url` (max 10 sidor, bara på
+  `api.kolada.se`).
+
+## Felhantering
+
+- Inga värden för kombinationen (okänt nyckeltal, okänd kommun, år som
+  inte publicerats) → `{ data: null, meta: { error: 'not_found' } }`
+- 404 → `{ data: null, meta: { error: 'not_found' } }`
+- 429 → `{ data: null, meta: { rate_limit_remaining: 0, error: 'rate_limited' } }`
+- Övriga fel → `{ data: null, meta: { error: 'upstream_error' } }`
+- Inga exceptions

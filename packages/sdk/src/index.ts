@@ -5,6 +5,7 @@ import { riksdagen } from './sources/riksdagen/index.js';
 import { nordpool } from './sources/nordpool/index.js';
 import { trafikverket } from './sources/trafikverket/index.js';
 import { polisen } from './sources/polisen/index.js';
+import { kolada } from './sources/kolada/index.js';
 
 export const svedata = {
   smhi,
@@ -14,6 +15,7 @@ export const svedata = {
   nordpool,
   trafikverket,
   polisen,
+  kolada,
 } as const;
 
 export type {
@@ -47,6 +49,14 @@ export type {
   TrafikverketSituationsResult,
   PolisenEvent,
   PolisenEventsResult,
+  KoladaKpi,
+  KoladaKpiSearchResult,
+  KoladaMunicipality,
+  KoladaMunicipalityList,
+  KoladaMunicipalityType,
+  KoladaGender,
+  KoladaDataPoint,
+  KoladaData,
 } from '@svedata/types';
 
 export default svedata;
