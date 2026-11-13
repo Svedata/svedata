@@ -6,6 +6,7 @@ import { nordpool } from './sources/nordpool/index.js';
 import { trafikverket } from './sources/trafikverket/index.js';
 import { polisen } from './sources/polisen/index.js';
 import { kolada } from './sources/kolada/index.js';
+import { arbetsformedlingen } from './sources/arbetsformedlingen/index.js';
 
 export const svedata = {
   smhi,
@@ -16,6 +17,7 @@ export const svedata = {
   trafikverket,
   polisen,
   kolada,
+  arbetsformedlingen,
 } as const;
 
 export type {
@@ -57,6 +59,8 @@ export type {
   KoladaGender,
   KoladaDataPoint,
   KoladaData,
+  ArbetsformedlingenJobAd,
+  ArbetsformedlingenSearchResult,
 } from '@svedata/types';
 
 export default svedata;
