@@ -7,6 +7,7 @@ import { trafikverket } from './sources/trafikverket/index.js';
 import { polisen } from './sources/polisen/index.js';
 import { kolada } from './sources/kolada/index.js';
 import { arbetsformedlingen } from './sources/arbetsformedlingen/index.js';
+import { krisinformation } from './sources/krisinformation/index.js';
 
 export const svedata = {
   smhi,
@@ -18,6 +19,7 @@ export const svedata = {
   polisen,
   kolada,
   arbetsformedlingen,
+  krisinformation,
 } as const;
 
 export type {
@@ -61,6 +63,10 @@ export type {
   KoladaData,
   ArbetsformedlingenJobAd,
   ArbetsformedlingenSearchResult,
+  KrisinformationArea,
+  KrisinformationLink,
+  KrisinformationNews,
+  KrisinformationNewsList,
 } from '@svedata/types';
 
 export default svedata;

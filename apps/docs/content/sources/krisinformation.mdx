@@ -1,0 +1,67 @@
+---
+title: Krisinformation
+description: Kris- och beredskapsnyheter från Krisinformation.se
+---
+
+# Krisinformation
+
+Krisinformation.se:s öppna API på `api.krisinformation.se/v3`, drivet
+av Myndigheten för civilt försvar. Ingen API-nyckel. (v2 togs ur bruk i
+september 2026.)
+
+**Villkor:** API:t får användas fritt av myndigheter, företag och
+privatpersoner. Ange att informationen kommer från Krisinformation.se,
+undvik onödiga anrop och cacha där det passar. Se
+[villkoren](https://www.krisinformation.se/om-krisinformation.se/oppen-data/).
+
+## Metoder
+
+### `svedata.krisinformation.news(options?)`
+
+Hämta kris- och beredskapsnyheter (t.ex. vädervarningar, större
+störningar), nyast först.
+
+```ts
+const { data } = await svedata.krisinformation.news({
+  counties: ['24', '25'],   // länskoder; utelämna för alla län
+  days: 30,                  // default 7 hos API:t
+  limit: 10,
+});
+// data.news[0] = {
+//   id: '1263',
+//   headline: 'Röd varning för snöfall i Skellefteå',
+//   preamble: '...',
+//   body: '...',
+//   published: '2026-11-12T08:22:12+01:00',
+//   updated: '2026-11-13T08:00:00+01:00',
+//   url: 'https://www.krisinformation.se/aktuellt/nyheter/...',
+//   language: 'sv',
+//   areas: [{ type: 'County', name: 'Västerbottens län' }],
+//   links: [{ text: 'SMHI:s varningar', url: 'https://www.smhi.se/...' }],
+// }
+```
+
+### `svedata.krisinformation.lookup(id)`
+
+Hämta en nyhet på id.
+
+## Egenheter att känna till
+
+- Utan `counties` skickar SDK:n `allcounties=true`, som i
+  myndighetens egna exempel. Upstream-filtret är inte helt
+  förutsägbart: rikstäckande nyheter (area `Sverige`) kommer ibland
+  bara med i API:ts default-flöde utan län, och med ett eller flera
+  län kan de komma med eller inte. Kontrollera `areas` om du bygger
+  lokala varningar.
+- Ett tomt svar betyder bara att API:t inte returnerade något för
+  filtret — inte att det är lugnt i hela landet.
+- VMA (Viktigt meddelande till allmänheten) via `/v3/vmas` är inte
+  med ännu: endpointen var tom vid bygget, så formatet kunde inte
+  verifieras mot riktiga data.
+
+## Felhantering
+
+- Okänt id → HTML-felsida med 404 → `{ data: null, meta: { error: 'not_found' } }`
+- 429 → `{ data: null, meta: { rate_limit_remaining: 0, error: 'rate_limited' } }`
+- Övriga fel eller icke-JSON → `{ data: null, meta: { error: 'upstream_error' } }`
+- Inga exceptions
