@@ -27,3 +27,6 @@ export * from './riksdagen.js';
 export * from './nordpool.js';
 export * from './trafikverket.js';
 export * from './polisen.js';
+export * from './kolada.js';
+export * from './arbetsformedlingen.js';
+export * from './krisinformation.js';

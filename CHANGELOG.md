@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+Three new keyless sources, bringing the SDK to ten.
+
+- **`svedata.kolada`** — municipal and regional key figures from Kolada
+  (RKA) via the v3 API: `kpis(query)`, `municipalities(query?)` and
+  `data(kpiId, municipality, { years })`. Gender codes are mapped to
+  `total`/`male`/`female`, missing values are `null`, and pagination is
+  followed (max 10 pages, Kolada's own host only). Kolada v2 now returns
+  HTTP 410, so v3 is the only option.
+- **`svedata.arbetsformedlingen`** — open job ads from Platsbanken via
+  JobTech JobSearch: `search({ query, municipality, region, ... })` and
+  `lookup(id)`. Accepts the same four-digit kommunkod as Kolada and SCB.
+  Recruiter contacts, employer phone/e-mail and organisation numbers are
+  deliberately not returned.
+- **`svedata.krisinformation`** — crisis and emergency news from
+  Krisinformation.se v3: `news({ counties, days, limit })` and
+  `lookup(id)`.
+
+All three use the shared `{ data, meta }` envelope, the shared User-Agent
+and the `meta.error` convention, and never throw for missing data.
+
 ## 0.1.3
 
 v0.1.3 improves consistency across all sources after an external review pass.

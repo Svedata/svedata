@@ -1,0 +1,70 @@
+---
+title: Arbetsförmedlingen
+description: Lediga jobb i Platsbanken via JobTech JobSearch
+---
+
+# Arbetsförmedlingen
+
+Arbetsförmedlingens öppna JobSearch-API (JobTech) på
+`jobsearch.api.jobtechdev.se` — sökmotorn bakom Platsbanken. Ingen
+API-nyckel. Annonsdatan är öppna data under
+[CC0](https://data.jobtechdev.se/dataservice/jobsearch/).
+
+## Metoder
+
+### `svedata.arbetsformedlingen.search(options?)`
+
+Sök bland aktuella platsannonser.
+
+```ts
+const { data } = await svedata.arbetsformedlingen.search({
+  query: 'utvecklare',        // fritext
+  municipality: '1281',       // kommunkod (eller JobTech concept id), en eller flera
+  region: '12',               // länskod (eller concept id)
+  publishedWithinMinutes: 1440,
+  limit: 20,                  // 1–100, default 20
+  offset: 0,
+});
+// data.total = 18
+// data.jobs[0] = {
+//   id: '31713000',
+//   headline: 'Salesforce Developer',
+//   employer_name: '...',
+//   occupation: 'Systemutvecklare/Programmerare',
+//   municipality: 'Lund', municipality_code: '1281',
+//   latitude: 55.70, longitude: 13.19,
+//   published: '2026-11-12T10:15:00',
+//   application_deadline: '2026-12-01T23:59:59',
+//   url: 'https://arbetsformedlingen.se/platsbanken/annonser/31713000',
+//   ...
+// }
+```
+
+### `svedata.arbetsformedlingen.lookup(id)`
+
+Hämta en annons på id. Borttagna eller okända annonser ger
+`meta.error: 'not_found'`.
+
+## Egenheter som hanteras åt dig
+
+- **Koordinater** kommer i GeoJSON-ordning `[lon, lat]` — SDK:n ger
+  `latitude`/`longitude` (WGS84).
+- **Taxonomi-objekt** (`{ concept_id, label }`) plattas till etiketten.
+- **limit över 100** ger HTTP 400 hos API:t — SDK:n klämmer till 100.
+- **Tider** (`published`, `application_deadline`) är svensk lokal tid
+  utan offset, precis som API:t publicerar dem.
+
+## Personuppgifter
+
+SDK:n returnerar medvetet **inte** `application_contacts`
+(namngivna rekryterare med mejl och telefon), arbetsgivarens
+telefon/mejl eller organisationsnumret — för enskilda firmor är
+organisationsnumret ägarens personnummer. Behöver du dem, följ `url`
+till annonsen.
+
+## Felhantering
+
+- 404 → `{ data: null, meta: { error: 'not_found' } }`
+- 429 → `{ data: null, meta: { rate_limit_remaining: 0, error: 'rate_limited' } }`
+- Övriga fel → `{ data: null, meta: { error: 'upstream_error' } }`
+- Inga exceptions
