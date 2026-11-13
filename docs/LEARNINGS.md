@@ -498,6 +498,44 @@ lies — fix the README, not the test.
 
 ---
 
+## Lessons from Kolada, Arbetsförmedlingen and Krisinformation
+
+### Kolada v2 is gone — it answers 410, not 404
+
+`api.kolada.se/v2/*` returns HTTP 410 with
+`{"error": "This endpoint is deprecated. Please use /v3 instead."}`.
+Most blog posts and older wrappers still point at v2. v3 keeps the same
+path shape (`/data/kpi/{kpi}/municipality/{m}/year/{y}`) and envelope
+(`values`, `next_url`, `count`). An empty `values` array with HTTP 200
+is how Kolada says "no such KPI/municipality/year" — map it to
+`not_found` yourself.
+
+### Only follow pagination links to the host you expect
+
+Kolada hands back absolute `next_url`s. Blindly following whatever URL a
+response contains would let a compromised or misbehaving upstream point
+the SDK at any host. Follow only URLs that start with `BASE_URL`,
+and cap the page walk.
+
+### Job ads carry personal data — strip it at the boundary
+
+JobTech hits include `application_contacts` (named recruiters with
+e-mail and phone) and an `organization_number` that for sole traders is
+the owner's personnummer. The SDK drops them; consumers can follow the
+ad URL. JobTech coordinates are GeoJSON `[lon, lat]` — swap them. And
+`limit > 100` is an HTTP 400, so clamp instead of passing it through.
+
+### Krisinformation's county filter is not a clean filter
+
+`/v3/news` without parameters returns national (`Sverige`) items only;
+`allcounties=true` returns county items and may drop the national ones;
+`counties=24,25` returns a mix that is not a strict subset of either.
+`days` looked ignored for small values. Unknown ids return an HTML 404
+page, so never call `res.json()` before checking the status. Document
+the quirk rather than trying to "fix" it client-side.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes

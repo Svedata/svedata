@@ -1,7 +1,7 @@
 # Svedata
 
 A TypeScript SDK for Swedish government open APIs — one install,
-typesafe access to seven sources, consistent `{ data, meta }` envelope
+typesafe access to ten sources, consistent `{ data, meta }` envelope
 across all of them.
 
 ## Install
@@ -113,6 +113,36 @@ await svedata.trafikverket.situations({ county: 1 });
 ```ts
 await svedata.polisen.events({ location: 'Stockholm', type: 'Rån' });
 ```
+
+### Kolada — municipal and regional key figures
+
+```ts
+await svedata.kolada.kpis('invånare');                       // search key figures
+await svedata.kolada.municipalities('lund');                 // → id '1281'
+await svedata.kolada.data('N01951', ['1281', '0180'], { years: [2023] });
+```
+
+Kolada (RKA) data is free to reuse, including commercially. Show
+`Källa: Kolada` when you display it.
+
+### Arbetsförmedlingen — job ads (JobTech JobSearch)
+
+```ts
+await svedata.arbetsformedlingen.search({ query: 'utvecklare', municipality: '1281' });
+await svedata.arbetsformedlingen.lookup('31642824');
+```
+
+Ads are CC0 open data. The SDK leaves out recruiter contact details
+and organisation numbers (a sole trader's is their personnummer).
+
+### Krisinformation — crisis and emergency news
+
+```ts
+await svedata.krisinformation.news({ counties: '24', days: 30 });
+await svedata.krisinformation.lookup(1263);
+```
+
+Attribute the information to Krisinformation.se when you show it.
 
 ## Why this exists
 
