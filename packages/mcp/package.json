@@ -3,6 +3,11 @@
   "version": "0.2.0",
   "description": "Svedata MCP tool definitions and SDK re-export. Currently exposes the SMHI weather tool.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Svedata/svedata.git",
+    "directory": "packages/mcp"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
