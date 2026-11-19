@@ -11,6 +11,7 @@ import { krisinformation } from './sources/krisinformation/index.js';
 import { svk } from './sources/svk/index.js';
 import { skolverket } from './sources/skolverket/index.js';
 import { visitsweden } from './sources/visitsweden/index.js';
+import { hav } from './sources/hav/index.js';
 
 export const svedata = {
   smhi,
@@ -26,6 +27,7 @@ export const svedata = {
   svk,
   skolverket,
   visitsweden,
+  hav,
 } as const;
 
 export type {
@@ -90,6 +92,16 @@ export type {
   VisitSwedenType,
   VisitSwedenItem,
   VisitSwedenSearchResult,
+  HavAdvice,
+  HavAbnormalSituation,
+  HavBathingWater,
+  HavBathingWaterList,
+  HavMeasurement,
+  HavSampleResult,
+  HavResults,
+  HavForecastPoint,
+  HavForecast,
+  HavForecastList,
 } from '@svedata/types';
 
 export default svedata;
