@@ -10,6 +10,7 @@ import { arbetsformedlingen } from './sources/arbetsformedlingen/index.js';
 import { krisinformation } from './sources/krisinformation/index.js';
 import { svk } from './sources/svk/index.js';
 import { skolverket } from './sources/skolverket/index.js';
+import { visitsweden } from './sources/visitsweden/index.js';
 
 export const svedata = {
   smhi,
@@ -24,6 +25,7 @@ export const svedata = {
   krisinformation,
   svk,
   skolverket,
+  visitsweden,
 } as const;
 
 export type {
@@ -85,6 +87,9 @@ export type {
   SkolverketEventList,
   SkolverketProvider,
   SkolverketProviderList,
+  VisitSwedenType,
+  VisitSwedenItem,
+  VisitSwedenSearchResult,
 } from '@svedata/types';
 
 export default svedata;

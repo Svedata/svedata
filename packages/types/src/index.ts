@@ -32,3 +32,4 @@ export * from './arbetsformedlingen.js';
 export * from './krisinformation.js';
 export * from './svk.js';
 export * from './skolverket.js';
+export * from './visitsweden.js';
