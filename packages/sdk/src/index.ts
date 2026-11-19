@@ -9,6 +9,7 @@ import { kolada } from './sources/kolada/index.js';
 import { arbetsformedlingen } from './sources/arbetsformedlingen/index.js';
 import { krisinformation } from './sources/krisinformation/index.js';
 import { svk } from './sources/svk/index.js';
+import { skolverket } from './sources/skolverket/index.js';
 
 export const svedata = {
   smhi,
@@ -22,6 +23,7 @@ export const svedata = {
   arbetsformedlingen,
   krisinformation,
   svk,
+  skolverket,
 } as const;
 
 export type {
@@ -74,6 +76,15 @@ export type {
   SvkPricePoint,
   SvkDayAheadPrices,
   SvkDatasetList,
+  SkolverketSchoolType,
+  SkolverketPage,
+  SkolverketEducation,
+  SkolverketEducationList,
+  SkolverketEventLocation,
+  SkolverketEvent,
+  SkolverketEventList,
+  SkolverketProvider,
+  SkolverketProviderList,
 } from '@svedata/types';
 
 export default svedata;

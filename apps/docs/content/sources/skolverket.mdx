@@ -1,0 +1,61 @@
+---
+title: Skolverket
+description: Utbildningar, utbildningstillfällen och anordnare från Susa-navet
+---
+
+# Skolverket
+
+Skolverkets Susa-navet (EMIL 3) på `api.skolverket.se/susa-navet/emil3`.
+Ingen API-nyckel. Det äldre API:t togs ur bruk 4 maj 2026.
+
+**Licens:** [CC0](https://creativecommons.org/publicdomain/zero/1.0/deed.sv)
+enligt
+[Skolverkets källicens](https://www.skolverket.se/om-skolverket/webbplatser-och-tjanster/oppna-data/api-for-utbildningstillfallen-susa-navet).
+
+## Metoder
+
+Alla listmetoder tar `schoolType` (en eller flera, t.ex. `'YH'`, `'HS'`,
+`'FHS'`, `'VUXSFI'`), `updatedSince` (`'2026-11-01'`), `page` (från 0)
+och `pageSize` (1–2000, default 100).
+
+### `svedata.skolverket.educations(options?)`
+
+```ts
+const { data } = await svedata.skolverket.educations({ schoolType: 'YH', pageSize: 50 });
+// data.total = 1314
+// data.educations[0] = { id: 'i.myh.yh.8917', code: 'YH00978-2023', title: 'Trafiklärare', school_type: 'YH', ... }
+```
+
+### `svedata.skolverket.events(options?)`
+
+Utbildningstillfällen med start, slut, sista ansökningsdag, platser och
+ort (kommunkod). Kan filtreras på `providerId`.
+
+```ts
+const { data } = await svedata.skolverket.events({ schoolType: 'YH' });
+// data.events[0] = {
+//   id: 'e.myh.yh.24481', education_id: 'i.myh.yh.8917',
+//   start: '2027-01-18', end: '2028-03-24', application_deadline: '2026-09-10',
+//   places: 24, locations: [{ town: 'Helsingborg', municipality_code: '1283' }], ...
+// }
+```
+
+### `svedata.skolverket.providers(options?)`
+
+Utbildningsanordnare: namn, webbplats, ort och huvudmannatyp. Telefon
+och mejl returneras inte.
+
+### `svedata.skolverket.education(id)`
+
+En utbildning på id.
+
+## Egenheter
+
+- Ingen fritextsökning finns upstream — filtrera på skolform och
+  bläddra, eller använd `updatedSince` för inkrementell synk.
+- Text finns på flera språk; SDK:n väljer svenska (`swe`) först.
+
+## Felhantering
+
+- 404 → `not_found`, 429 → `rate_limited` (`rate_limit_remaining: 0`),
+  övrigt → `upstream_error`. Inga exceptions.
