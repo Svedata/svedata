@@ -8,6 +8,7 @@ import { polisen } from './sources/polisen/index.js';
 import { kolada } from './sources/kolada/index.js';
 import { arbetsformedlingen } from './sources/arbetsformedlingen/index.js';
 import { krisinformation } from './sources/krisinformation/index.js';
+import { svk } from './sources/svk/index.js';
 
 export const svedata = {
   smhi,
@@ -20,6 +21,7 @@ export const svedata = {
   kolada,
   arbetsformedlingen,
   krisinformation,
+  svk,
 } as const;
 
 export type {
@@ -67,6 +69,11 @@ export type {
   KrisinformationLink,
   KrisinformationNews,
   KrisinformationNewsList,
+  SvkFlowPoint,
+  SvkFlows,
+  SvkPricePoint,
+  SvkDayAheadPrices,
+  SvkDatasetList,
 } from '@svedata/types';
 
 export default svedata;
