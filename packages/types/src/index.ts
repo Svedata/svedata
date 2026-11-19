@@ -30,3 +30,7 @@ export * from './polisen.js';
 export * from './kolada.js';
 export * from './arbetsformedlingen.js';
 export * from './krisinformation.js';
+export * from './svk.js';
+export * from './skolverket.js';
+export * from './visitsweden.js';
+export * from './hav.js';

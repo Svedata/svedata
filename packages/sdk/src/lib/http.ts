@@ -1,4 +1,4 @@
-export const USER_AGENT = 'svedata/0.1 (+https://github.com/Svedata/svedata)';
+export const USER_AGENT = 'svedata/0.2.0 (+https://github.com/Svedata/svedata)';
 
 /**
  * Wrapper around fetch that sets default Accept and User-Agent headers.

@@ -1,0 +1,55 @@
+---
+title: Visit Sweden
+description: Boende, mat, evenemang och platser från Visit Swedens nationella API
+---
+
+# Visit Sweden
+
+Visit Swedens nationella API för besöksnäringen (EntryStore, JSON-LD)
+på `data.visitsweden.com/store`. Publik sökning fungerar utan nyckel.
+
+**Licens — osäker:** Visit Sweden beskriver datat som öppna data som
+kan användas, återanvändas och delas "utan licenskostnad" och "utan
+licensrestriktioner", men anger ingen namngiven licens (t.ex. CC0 eller
+CC BY). Innehållet kommer från många aktörer, och bildrättigheter kan
+gälla separat. SDK:n returnerar text, koordinater och länkar — inga
+bilder. Ange Visit Sweden som källa och läs
+[villkoren](https://corporate.visitsweden.com/nationellt-api/) innan
+kommersiell vidarepublicering.
+
+## Metoder
+
+### `svedata.visitsweden.search(options?)`
+
+```ts
+const { data } = await svedata.visitsweden.search({
+  type: 'lodging',      // 'lodging' | 'food' | 'event' | 'place' | 'store' | 'trip', en eller flera
+  region: 'skane',      // Visit Swedens region-slug
+  query: 'naturhotell', // fritext, varje ord måste matcha
+  lang: 'en',           // föredraget språk, faller tillbaka på svenska
+  limit: 20,            // 1–100
+  offset: 0,
+});
+// data.items[0] = {
+//   id: '125/22', type: 'LodgingBusiness', name: 'Nyrups Naturhotell',
+//   region: 'skane', latitude: 55.968, longitude: 13.462, ...
+// }
+```
+
+### `svedata.visitsweden.lookup(id)`
+
+En post på id `'<contextId>/<entryId>'`, t.ex. `'210/4613'`.
+
+## Egenheter som hanteras åt dig
+
+- JSON-LD-grafen plattas till ett objekt: geo- och adressnoder slås ihop
+  med huvudposten, språkvärden väljs efter `lang`.
+- Fritext och region escapas för Solr innan de skickas.
+- Vissa regioner (t.ex. Blekinge, Dalarna, Gotland) har avvikande URI:er
+  upstream och matchar inte alltid `region`-filtret; `region` blir då
+  `null` i svaret.
+
+## Felhantering
+
+- 404 eller ogiltigt id → `not_found`, 429 → `rate_limited`,
+  400/oväntad body → `upstream_error`. Inga exceptions.

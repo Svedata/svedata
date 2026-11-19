@@ -8,6 +8,10 @@ import { polisen } from './sources/polisen/index.js';
 import { kolada } from './sources/kolada/index.js';
 import { arbetsformedlingen } from './sources/arbetsformedlingen/index.js';
 import { krisinformation } from './sources/krisinformation/index.js';
+import { svk } from './sources/svk/index.js';
+import { skolverket } from './sources/skolverket/index.js';
+import { visitsweden } from './sources/visitsweden/index.js';
+import { hav } from './sources/hav/index.js';
 
 export const svedata = {
   smhi,
@@ -20,6 +24,10 @@ export const svedata = {
   kolada,
   arbetsformedlingen,
   krisinformation,
+  svk,
+  skolverket,
+  visitsweden,
+  hav,
 } as const;
 
 export type {
@@ -67,6 +75,33 @@ export type {
   KrisinformationLink,
   KrisinformationNews,
   KrisinformationNewsList,
+  SvkFlowPoint,
+  SvkFlows,
+  SvkPricePoint,
+  SvkDayAheadPrices,
+  SvkDatasetList,
+  SkolverketSchoolType,
+  SkolverketPage,
+  SkolverketEducation,
+  SkolverketEducationList,
+  SkolverketEventLocation,
+  SkolverketEvent,
+  SkolverketEventList,
+  SkolverketProvider,
+  SkolverketProviderList,
+  VisitSwedenType,
+  VisitSwedenItem,
+  VisitSwedenSearchResult,
+  HavAdvice,
+  HavAbnormalSituation,
+  HavBathingWater,
+  HavBathingWaterList,
+  HavMeasurement,
+  HavSampleResult,
+  HavResults,
+  HavForecastPoint,
+  HavForecast,
+  HavForecastList,
 } from '@svedata/types';
 
 export default svedata;

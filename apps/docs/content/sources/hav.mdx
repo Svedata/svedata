@@ -1,0 +1,55 @@
+---
+title: Havs- och vattenmyndigheten
+description: Badplatser, provresultat och vattentemperaturprognoser
+---
+
+# Havs- och vattenmyndigheten
+
+HaV:s API för badplatser och badvatten v2 på
+`gw.havochvatten.se/external-public/bathing-waters/v2`. Öppet utan
+nyckel; max 1000 anrop per minut.
+
+**Villkor:** API-specifikationen är CC0 enligt HaV:s
+[användarvillkor](https://www.havochvatten.se/data-kartor-och-rapporter/data-och-statistik/data-och-apier/api-badplatser-och-badvatten.html).
+För själva datat hänvisar villkoren till HaV:s webbplats, där det
+beskrivs som öppna data utan namngiven licens. Ange Havs- och
+vattenmyndigheten som källa.
+
+## Metoder
+
+### `svedata.hav.bathingWaters(options?)`
+
+```ts
+const { data } = await svedata.hav.bathingWaters({
+  municipality: '1264',        // kommunkod, filtreras i SDK:n
+  adviceAgainstBathing: true,  // bara badplatser med pågående avrådan
+});
+// data.bathing_waters[0] = {
+//   id: 'SE0441264000000306', name: 'Mossbylund', municipality: 'Skurup',
+//   municipality_code: '1264', water_type: 'Hav', eu_bathing_water: true,
+//   latitude: 55.4133, longitude: 13.6253,
+//   advice_against_bathing: [], abnormal_situations: [],
+// }
+```
+
+### `svedata.hav.lookup(id)` och `svedata.hav.results(id)`
+
+En badplats, respektive provresultat (E. coli, intestinala enterokocker,
+algblomning, vattentemperatur), nyast först.
+
+### `svedata.hav.forecasts(options?)`
+
+Copernicus-prognoser för vattentemperatur de närmaste timmarna, per
+badplats eller kommun. `hour` är timme på dygnet; API:t anger inget datum.
+
+## Egenheter som hanteras åt dig
+
+- Kommunfiltret på `/bathing-waters` ignoreras upstream — SDK:n filtrerar
+  själv. Kommunkoder nollpaddas (`114` → `'0114'`).
+- Koordinater är strängar upstream och parsas till tal.
+- Kommunens kontaktuppgifter tas inte med.
+
+## Felhantering
+
+- 404 → `not_found`, 429 → `rate_limited`, övrigt → `upstream_error`.
+  Inga exceptions.

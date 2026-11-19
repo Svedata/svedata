@@ -1,0 +1,61 @@
+---
+title: Svenska kraftnät
+description: Kraftflöden och historiska day-ahead-priser från SVK Data Service
+---
+
+# Svenska kraftnät
+
+Svenska kraftnäts Data Service (`data.svk.se`) är ett CKAN-API. Ingen
+API-nyckel.
+
+**Licens:** CC BY 4.0. Ange alltid `Källa: Svenska kraftnät (data.svk.se)`
+och markera om du har ändrat datat. Datat får **inte** användas som
+operativt underlag för beslut eller drift, elnätsverksamhet eller
+tids- och säkerhetskritiska funktioner. Se
+[data.svk.se/sv/about](https://data.svk.se/sv/about).
+
+## Metoder
+
+### `svedata.svk.flows(options?)`
+
+Fysiska nettoflöden mellan elområden, i MW, per kvart för ett datum
+(svensk tid, default i dag).
+
+```ts
+const { data } = await svedata.svk.flows({ date: '2026-11-19', from: 'SE3', to: 'SE4' });
+// data.flows[0] = {
+//   start: '2026-11-18T23:00:00Z',
+//   start_local: '2026-11-19T00:00:00',
+//   from: 'SE3', to: 'SE4',
+//   power_mw: 2251.43,
+// }
+```
+
+### `svedata.svk.prices(area, options?)`
+
+Arkiverade day-ahead-priser i EUR/MWh för ett elområde och datum.
+Datasetet innehöll värden till och med 1 juli 2026 när källan byggdes.
+Använd `nordpool.prices()` för dagens priser.
+
+### `svedata.svk.datasets()`
+
+Listar namnen på de dataset som Data Service publicerar.
+
+## Egenheter som hanteras åt dig
+
+- `datastore_search` stöder bara exakta filter, inte datumintervall,
+  och SQL-endpointen är avstängd. SDK:n räknar därför upp dygnets 96
+  lokala kvartstider. Vid omställning till vintertid kommer de dubbla
+  tidpunkterna med (100 punkter); vid sommartid saknas de som inte finns.
+- Tider utan offset normaliseras: `start` är UTC med `Z`,
+  `start_local` är svensk tid.
+- Om upstream rapporterar fler rader än som returnerades ger SDK:n
+  `upstream_error` i stället för att tyst klippa svaret.
+
+## Felhantering
+
+- Inga rader → `{ data: null, meta: { error: 'not_found' } }`
+- 404 eller CKAN `Not Found Error` → `not_found`
+- 429 → `{ data: null, meta: { rate_limit_remaining: 0, error: 'rate_limited' } }`
+- Valideringsfel, oväntad enhet eller trasig body → `upstream_error`
+- Inga exceptions
