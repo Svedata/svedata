@@ -1,6 +1,34 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
+
+Four more keyless sources, taking the SDK from ten to fourteen:
+
+- **`svedata.svk`** — Svenska kraftnät Data Service: `flows()` for net
+  cross-border flows (MW), `prices()` for archived day-ahead area prices
+  (EUR/MWh), and `datasets()` for discovery. CC BY 4.0; attribution and
+  non-operational-use restrictions documented. The price archive only
+  reached 1 July 2026 at integration time.
+- **`svedata.skolverket`** — Susa-navet EMIL 3: `educations()`, `events()`,
+  `providers()` and `education(id)`. Zero-based pagination, school-type
+  filtering and incremental `updatedSince` queries. CC0.
+- **`svedata.visitsweden`** — national tourism API: `search()` and
+  `lookup()`, with typed JSON-LD mapping, language selection and Solr
+  escaping. Text and links only, no images. The provider describes open
+  reuse but names no specific licence; this uncertainty is explicit in
+  README and source docs.
+- **`svedata.hav`** — bathing waters API v2: `bathingWaters()`, `lookup()`,
+  `results()` and `forecasts()`, with advisories, water sample results
+  and Copernicus water temperature forecasts. API spec CC0; the data
+  is open under HaV's terms, with no named data licence found.
+
+All use the shared envelope, `meta.error` and User-Agent. README now
+lists all 14 sources, key requirements and licence/attribution links.
+Package descriptions/keywords are updated. Versions of all four
+publishable packages and the lockfile are aligned at 0.2.0. CLI and MCP
+still only expose their existing SMHI entry points.
+
+### Previously unreleased sources
 
 Three new keyless sources, bringing the SDK to ten.
 

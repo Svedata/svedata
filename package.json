@@ -2,7 +2,7 @@
   "name": "svedata",
   "private": true,
   "version": "0.0.0",
-  "description": "Open-source TypeScript SDK för svenska myndighets-API:er",
+  "description": "TypeScript SDK for 14 Swedish public data APIs, with a consistent typed envelope.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -32,5 +32,13 @@
     "tsup": "^8.3.0",
     "turbo": "^2.1.0",
     "typescript": "^5.6.0"
-  }
+  },
+  "keywords": [
+    "typescript",
+    "sweden",
+    "open-data",
+    "government-api",
+    "sdk",
+    "svedata"
+  ]
 }
