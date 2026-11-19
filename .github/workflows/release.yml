@@ -1,0 +1,115 @@
+name: Release
+
+# Publishes @svedata/types, @svedata/data, @svedata/mcp and @svedata/cli
+# to npm when a vX.Y.Z tag is pushed. See docs/RELEASE.md.
+#
+# Manual runs (workflow_dispatch) must be started from a tag: in the
+# Actions tab, pick the vX.Y.Z tag under "Use workflow from".
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - name: Require NPM_TOKEN secret
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error title=NPM_TOKEN missing::The NPM_TOKEN repository secret is empty or not set. Add it under Settings > Secrets and variables > Actions (see docs/RELEASE.md)."
+            exit 1
+          fi
+
+      - name: Require a vX.Y.Z tag ref
+        id: tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "${REF_TYPE}" != "tag" ] || ! [[ "${REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error title=Not a release tag::Run this workflow from a vX.Y.Z tag (got ${REF_TYPE} '${REF_NAME}')."
+            exit 1
+          fi
+          echo "version=${REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Check tag matches every package.json version
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          fail=0
+          for pkg in types sdk mcp cli; do
+            v="$(node -p "require('./packages/${pkg}/package.json').version")"
+            if [ "${v}" != "${VERSION}" ]; then
+              echo "::error file=packages/${pkg}/package.json::version is ${v}, tag is v${VERSION}"
+              fail=1
+            else
+              echo "ok packages/${pkg}/package.json = ${v}"
+            fi
+          done
+          exit "${fail}"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Pack tarballs
+        run: bun run release:pack
+
+      - name: Verify tarballs
+        run: bun run release:verify
+
+      - name: Publish to npm (types -> data -> mcp -> cli)
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          for short in types data mcp cli; do
+            tgz="dist-tarballs/svedata-${short}-${VERSION}.tgz"
+            if [ ! -f "${tgz}" ]; then
+              echo "::error::Missing ${tgz}. Contents of dist-tarballs/:"
+              ls -la dist-tarballs
+              exit 1
+            fi
+
+            name="$(tar -xOzf "${tgz}" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).name')"
+            tver="$(tar -xOzf "${tgz}" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')"
+            if [ "${tver}" != "${VERSION}" ]; then
+              echo "::error::${tgz} has version ${tver}, expected ${VERSION}"
+              exit 1
+            fi
+
+            # npm view prints the version when it exists, prints nothing when the
+            # package exists without that version, and exits non-zero (E404) when
+            # the package does not exist at all.
+            published="$(npm view "${name}@${VERSION}" version 2>/dev/null || true)"
+            if [ "${published}" = "${VERSION}" ]; then
+              echo "skip ${name}@${VERSION}: already on npm"
+              continue
+            fi
+
+            echo "publish ${name}@${VERSION} from ${tgz}"
+            npm publish "${tgz}" --access public --provenance
+          done

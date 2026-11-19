@@ -3,6 +3,11 @@
   "version": "0.2.0",
   "description": "Shared TypeScript types for Svedata — 14 Swedish public data APIs.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Svedata/svedata.git",
+    "directory": "packages/types"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
