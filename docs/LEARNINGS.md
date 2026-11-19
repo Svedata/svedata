@@ -536,6 +536,38 @@ the quirk rather than trying to "fix" it client-side.
 
 ---
 
+## Lessons from SVK, Skolverket, Visit Sweden and HaV
+
+### CKAN datastore without SQL: enumerate exact timestamps
+
+SVK Data Service disables `datastore_search_sql`, and `filters` only
+supports exact values or lists. A date "range" therefore has to be a list
+of the 96 local quarter-hour timestamps. Clock changes come for free:
+repeated autumn times match both UTC rows, missing spring times match
+none. Compare `total` with the number of returned rows and fail instead of
+silently truncating.
+
+### "Live" datasets can be archives
+
+SVK's day-ahead price dataset was last updated in October 2026 and ended
+at 1 July 2026. Check the latest timestamp, not only HTTP 200, before
+documenting a dataset as current.
+
+### Some upstream filters are accepted and ignored
+
+HaV `/bathing-waters?municipality=...` returns 200 and the full list.
+Test a filter by checking that the result actually changes; when it does
+not, filter in the SDK and test that behaviour.
+
+### Linked data needs graph flattening and query escaping
+
+Visit Sweden returns JSON-LD `@graph`s where address and coordinates are
+separate blank nodes and literals vary between strings, objects and
+language arrays. Normalise at the boundary. User text goes into a Solr
+query, so escape Solr syntax and validate path ids before building URLs.
+
+---
+
 ## Process learnings
 
 ### Verify current state before planning fixes
